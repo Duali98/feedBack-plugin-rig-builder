@@ -7155,27 +7155,27 @@
       // "Polystone" logo (bottom-right, like the panel)
       textC(d,W*.885,H*.46,F.anton,26,ink,'Polystone'); } };
 
-  // ── RONALD JC-120 (Roland JC-120H Jazz Chorus head) — 1:1 con las fotos:
-  //    tolex negro con TACHAS de metal alrededor, panel superior negro con la
-  //    seccion CHORUS oliva, perillas de aluminio, badge JAZZ CHORUS-120H,
-  //    piloto rojo + POWER, y la gran rejilla de cuadricula con bandas de
-  //    aluminio y placa Ronald. ids: 0 Volume 1 Treble 2 Middle 3 Bass
-  //    4 Distortion 5 Reverb 6 Rate 7 Depth 8 Chorus(3-pos). RS: Gain->Dist.
+  // ── RONALD JC-120 (Roland JC-120H Jazz Chorus head) — proporciones 1:1 con
+  //    la foto: franja de panel ANGOSTA y compacta arriba, la gran rejilla de
+  //    cuadricula blanca con marco de piping dominando el frente, placa Ronald
+  //    grande a la izquierda, tachas alrededor y esquineras envolventes.
+  //    ids: 0 Volume 1 Treble 2 Middle 3 Bass 4 Distortion 5 Reverb 6 Rate
+  //    7 Depth 8 Chorus(3-pos). RS: Gain->Distortion.
   P.ronaldjc120 = { w:1380, h:600, ptr:rgb(244,245,248), tick:rgb(172,174,180),
     knobs:[
-      {id:4,cx:.155,cy:.235,r:.0155,style:'jcsilver'},  // DISTORTION
-      {id:0,cx:.215,cy:.235,r:.0155,style:'jcsilver'},  // VOLUME
-      {id:1,cx:.285,cy:.235,r:.0155,style:'jcsilver'},  // TREBLE (HI)
-      {id:2,cx:.345,cy:.235,r:.0155,style:'jcsilver'},  // MIDDLE
-      {id:3,cx:.405,cy:.235,r:.0155,style:'jcsilver'},  // BASS
-      {id:5,cx:.475,cy:.235,r:.0155,style:'jcsilver'},  // REVERB
-      {id:6,cx:.560,cy:.235,r:.0155,style:'jcsilver'},  // RATE
-      {id:7,cx:.620,cy:.235,r:.0155,style:'jcsilver'} ],// DEPTH
-    sw3:[{id:8,cx:.678,cy:.235,hw:16,hh:34}],           // palanca CHORUS 3 posiciones
+      {id:4,cx:.168,cy:.225,r:.0135,style:'jcsilver'},  // DISTORTION
+      {id:0,cx:.218,cy:.225,r:.0135,style:'jcsilver'},  // VOLUME
+      {id:1,cx:.268,cy:.225,r:.0135,style:'jcsilver'},  // HI-TREBLE
+      {id:2,cx:.318,cy:.225,r:.0135,style:'jcsilver'},  // MIDDLE
+      {id:3,cx:.368,cy:.225,r:.0135,style:'jcsilver'},  // BASS
+      {id:5,cx:.430,cy:.225,r:.0135,style:'jcsilver'},  // REVERB
+      {id:6,cx:.505,cy:.225,r:.0135,style:'jcsilver'},  // RATE
+      {id:7,cx:.555,cy:.225,r:.0135,style:'jcsilver'} ],// DEPTH
+    sw3:[{id:8,cx:.602,cy:.225,hw:13,hh:28}],           // palanca CHORUS 3 posiciones
     draw(d,vals){ const {ctx:c,W,H,s}=d;
-      const ink=rgb(228,229,232), inkF='rgba(228,229,232,0.6)';
+      const ink=rgb(226,227,230), inkF='rgba(226,227,230,0.6)';
       // ── tolex negro rugoso ──
-      const bgr=c.createLinearGradient(0,0,0,H); bgr.addColorStop(0,rgb(33,32,33)); bgr.addColorStop(.5,rgb(25,24,25)); bgr.addColorStop(1,rgb(15,14,15));
+      const bgr=c.createLinearGradient(0,0,0,H); bgr.addColorStop(0,rgb(34,33,34)); bgr.addColorStop(.5,rgb(26,25,26)); bgr.addColorStop(1,rgb(16,15,16));
       c.fillStyle=bgr; c.fillRect(0,0,W,H);
       c.save(); c.beginPath(); c.rect(0,0,W,H); c.clip();
       for(let i=0;i<1000;i++){ const hx2=Math.abs(Math.sin(i*127.1)*43758.5453)%1, hy2=Math.abs(Math.sin(i*311.7)*268.5453)%1;
@@ -7185,125 +7185,129 @@
       vg.addColorStop(0,'rgba(255,255,255,0.02)'); vg.addColorStop(1,'rgba(0,0,0,0.34)');
       c.fillStyle=vg; c.fillRect(0,0,W,H);
       // asa
-      rr(c,W*.42,H*.008,W*.16,H*.045,12*s); c.fillStyle=rgb(12,12,13); c.fill();
+      rr(c,W*.43,H*.006,W*.14,H*.040,11*s); c.fillStyle=rgb(12,12,13); c.fill();
       c.strokeStyle='rgba(255,255,255,0.09)'; c.lineWidth=1*s; c.stroke();
       c.restore();
-      // ── panel de control (negro, seccion chorus oliva) ──
-      const py=H*.095, ph=H*.30, px=W*.030, pw=W*.94;
-      rr(c,px-3*s,py-3*s,pw+6*s,ph+6*s,6*s); c.fillStyle=rgb(6,6,7); c.fill();
-      const pgr=c.createLinearGradient(0,py,0,py+ph); pgr.addColorStop(0,rgb(38,38,40)); pgr.addColorStop(.5,rgb(27,27,29)); pgr.addColorStop(1,rgb(18,18,20));
-      rr(c,px,py,pw,ph,4*s); c.fillStyle=pgr; c.fill();
-      c.save(); rr(c,px,py,pw,ph,4*s); c.clip();
-      // seccion CHORUS oliva (rate/depth/palanca)
-      const ox0=W*.528, ox1=W*.712;
-      const og=c.createLinearGradient(0,py,0,py+ph); og.addColorStop(0,rgb(96,98,64)); og.addColorStop(.5,rgb(82,84,54)); og.addColorStop(1,rgb(62,64,40));
+      // ── franja de panel ANGOSTA (como el real) ──
+      const py=H*.105, ph=H*.205, px=W*.062, pw=W*.876;
+      rr(c,px-3*s,py-3*s,pw+6*s,ph+6*s,5*s); c.fillStyle=rgb(5,5,6); c.fill();
+      const pgr=c.createLinearGradient(0,py,0,py+ph); pgr.addColorStop(0,rgb(40,40,42)); pgr.addColorStop(.5,rgb(29,29,31)); pgr.addColorStop(1,rgb(20,20,22));
+      rr(c,px,py,pw,ph,3.5*s); c.fillStyle=pgr; c.fill();
+      c.save(); rr(c,px,py,pw,ph,3.5*s); c.clip();
+      // seccion CHORUS oliva oscura (rate/depth/palanca)
+      const ox0=W*.472, ox1=W*.628;
+      const og=c.createLinearGradient(0,py,0,py+ph); og.addColorStop(0,rgb(84,86,56)); og.addColorStop(.5,rgb(72,74,48)); og.addColorStop(1,rgb(54,56,36));
       c.fillStyle=og; c.fillRect(ox0,py,ox1-ox0,ph);
       c.strokeStyle='rgba(255,255,255,0.05)'; c.lineWidth=1;
-      for(let yy=py+2*s; yy<py+ph; yy+=2.6*s){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
+      for(let yy=py+2*s; yy<py+ph; yy+=2.4*s){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
       c.restore();
-      rr(c,px,py,pw,ph,4*s); c.strokeStyle=rgb(70,72,76); c.lineWidth=1.2*s; c.stroke();
-      const topY=py+ph*.115, botY=py+ph*.875, ky=.235*H;
-      // divisores
-      [.135,.258,.442,.528,.712].forEach(xx=>{ c.beginPath(); c.moveTo(xx*W,py+ph*.08); c.lineTo(xx*W,py+ph*.92);
-        c.strokeStyle='rgba(200,202,208,0.28)'; c.lineWidth=1*s; c.stroke(); });
-      // ── INPUT: HIGH/LOW ──
-      const jack=(jx2,jy2)=>{ c.beginPath(); c.arc(jx2,jy2,7*s,0,7); c.fillStyle=rgb(14,13,13); c.fill();
-        c.strokeStyle=rgb(150,153,158); c.lineWidth=1.8*s; c.stroke();
-        c.beginPath(); c.arc(jx2,jy2,2.4*s,0,7); c.fillStyle=rgb(52,52,56); c.fill(); };
-      jack(.062*W,ky); jack(.100*W,ky);
-      textSpaced(d,.081*W,topY,F.barlow,7,ink,'INPUT',0.05);
-      c.strokeStyle='rgba(228,229,232,0.55)'; c.lineWidth=1*s;
-      c.beginPath(); c.moveTo(.052*W,topY+6*s); c.lineTo(.052*W,topY+11*s); c.lineTo(.110*W,topY+11*s); c.lineTo(.110*W,topY+6*s); c.stroke();
-      textSpaced(d,.062*W,botY,F.barlow,6,inkF,'HIGH',0.03);
-      textSpaced(d,.100*W,botY,F.barlow,6,inkF,'LOW',0.03);
-      // ── labels + abanicos 0-10 ──
-      const KR=.0155*W;
+      rr(c,px,py,pw,ph,3.5*s); c.strokeStyle=rgb(78,80,84); c.lineWidth=1.1*s; c.stroke();
+      const topY=py+ph*.14, botY=py+ph*.86, ky=.225*H;
+      [.143,.243,.398,.472,.628].forEach(xx=>{ c.beginPath(); c.moveTo(xx*W,py+ph*.08); c.lineTo(xx*W,py+ph*.92);
+        c.strokeStyle='rgba(200,202,208,0.25)'; c.lineWidth=1*s; c.stroke(); });
+      // ── INPUT HIGH/LOW ──
+      const jack=(jx2,jy2)=>{ c.beginPath(); c.arc(jx2,jy2,6.5*s,0,7); c.fillStyle=rgb(14,13,13); c.fill();
+        c.strokeStyle=rgb(150,153,158); c.lineWidth=1.7*s; c.stroke();
+        c.beginPath(); c.arc(jx2,jy2,2.2*s,0,7); c.fillStyle=rgb(52,52,56); c.fill(); };
+      jack(.089*W,ky+4*s); jack(.118*W,ky+4*s);
+      textSpaced(d,.1035*W,topY,F.barlow,6.5,ink,'INPUT',0.05);
+      c.strokeStyle='rgba(226,227,230,0.55)'; c.lineWidth=1*s;
+      c.beginPath(); c.moveTo(.082*W,topY+6*s); c.lineTo(.082*W,topY+10*s); c.lineTo(.125*W,topY+10*s); c.lineTo(.125*W,topY+6*s); c.stroke();
+      textSpaced(d,.089*W,botY,F.barlow,5.5,inkF,'HIGH',0.02);
+      textSpaced(d,.118*W,botY,F.barlow,5.5,inkF,'LOW',0.02);
+      // ── labels + numeros compactos ──
+      const KR=.0135*W;
       const fan=(kx,offLbl)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
-        c.font=`700 ${Math.round(6.6*s)}px ${F.barlow}`; c.fillStyle=ink;
+        c.font=`700 ${Math.round(6.2*s)}px ${F.barlow}`; c.fillStyle=ink;
         for(let n=0;n<=10;n+=5){ const aa=ang(n/10); const rr2=KR*1.55;
           c.fillText(n===0&&offLbl?offLbl:String(n), kx*W+rr2*Math.cos(aa), ky+rr2*Math.sin(aa)); }
         c.restore(); };
-      fan(.155,'OFF'); fan(.215); fan(.285); fan(.345); fan(.405); fan(.475); fan(.560); fan(.620);
-      textSpaced(d,.155*W,topY,F.barlow,6.5,ink,'DISTORTION',0.02);
-      textSpaced(d,.215*W,topY,F.barlow,6.5,ink,'VOLUME',0.02);
-      textSpaced(d,.285*W,topY,F.barlow,6.5,ink,'HI-TREBLE',0.02);
-      textSpaced(d,.345*W,topY,F.barlow,6.5,ink,'MIDDLE',0.02);
-      textSpaced(d,.405*W,topY,F.barlow,6.5,ink,'BASS',0.02);
-      textSpaced(d,.475*W,topY,F.barlow,6.5,ink,'REVERB',0.02);
-      textSpaced(d,.560*W,topY,F.barlow,6.5,ink,'RATE',0.03);
-      textSpaced(d,.620*W,topY,F.barlow,6.5,ink,'DEPTH',0.02);
-      // bracket EQUALIZER sobre HI-TREBLE..BASS
-      c.strokeStyle='rgba(228,229,232,0.5)'; c.lineWidth=1*s;
-      c.beginPath(); c.moveTo(.285*W-14*s,py+ph*.04+5*s); c.lineTo(.285*W-14*s,py+ph*.04);
-      c.lineTo(.405*W+14*s,py+ph*.04); c.lineTo(.405*W+14*s,py+ph*.04+5*s); c.stroke();
-      textSpaced(d,.345*W,py+ph*.045,F.barlow,5.5,inkF,'EQUALIZER',0.06);
-      // palanca CHORUS (la dibuja el engine): labels de posicion
-      textSpaced(d,.678*W,topY,F.barlow,6.5,ink,'CHORUS',0.02);
-      textSpaced(d,.706*W,ky-16*s,F.barlow,5.5,inkF,'VIB',0.02);
-      textSpaced(d,.706*W,ky,F.barlow,5.5,inkF,'OFF',0.02);
-      textSpaced(d,.706*W,ky+16*s,F.barlow,5.5,inkF,'ON',0.02);
-      // ── badge JAZZ CHORUS-120H + Ronald + piloto + POWER ──
-      rr(c,.725*W,py+ph*.10,W*.155,ph*.34,3*s); c.fillStyle=rgb(10,10,11); c.fill();
-      c.strokeStyle=rgb(190,192,198); c.lineWidth=1.2*s; c.stroke();
-      textSpaced(d,.8025*W,py+ph*.27,F.bebas,11.5,rgb(240,241,244),'JAZZ CHORUS-120H',0.03);
-      rr(c,.725*W,py+ph*.52,W*.052,ph*.34,3*s); c.fillStyle=rgb(10,10,11); c.fill();
-      c.strokeStyle=rgb(150,152,158); c.lineWidth=1*s; c.stroke();
+      fan(.168,'OFF'); fan(.218); fan(.268); fan(.318); fan(.368); fan(.430); fan(.505); fan(.555);
+      textSpaced(d,.168*W,topY,F.barlow,6,ink,'DISTORTION',0.01);
+      textSpaced(d,.218*W,topY,F.barlow,6,ink,'VOLUME',0.02);
+      textSpaced(d,.268*W,topY,F.barlow,6,ink,'HI-TREBLE',0.01);
+      textSpaced(d,.318*W,topY,F.barlow,6,ink,'MIDDLE',0.02);
+      textSpaced(d,.368*W,topY,F.barlow,6,ink,'BASS',0.02);
+      textSpaced(d,.430*W,topY,F.barlow,6,ink,'REVERB',0.02);
+      textSpaced(d,.505*W,topY,F.barlow,6,ink,'RATE',0.02);
+      textSpaced(d,.555*W,topY,F.barlow,6,ink,'DEPTH',0.02);
+      c.strokeStyle='rgba(226,227,230,0.5)'; c.lineWidth=1*s;
+      c.beginPath(); c.moveTo(.268*W-12*s,py+ph*.05+4*s); c.lineTo(.268*W-12*s,py+ph*.05);
+      c.lineTo(.368*W+12*s,py+ph*.05); c.lineTo(.368*W+12*s,py+ph*.05+4*s); c.stroke();
+      textSpaced(d,.318*W,py+ph*.055,F.barlow,5,inkF,'EQUALIZER',0.05);
+      // palanca CHORUS (engine) + marcas
+      textSpaced(d,.602*W,topY,F.barlow,6,ink,'CHORUS',0.02);
+      textSpaced(d,.620*W,ky-13*s,F.barlow,5,inkF,'VIB',0.02);
+      textSpaced(d,.620*W,ky,F.barlow,5,inkF,'OFF',0.02);
+      textSpaced(d,.620*W,ky+13*s,F.barlow,5,inkF,'ON',0.02);
+      // ── seccion derecha: badge + Ronald + piloto + POWER (compacta) ──
+      rr(c,.636*W,py+ph*.12,W*.150,ph*.40,3*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle=rgb(200,202,208); c.lineWidth=1.2*s; c.stroke();
       c.save(); c.textAlign='center'; c.textBaseline='middle';
-      c.font=`800 ${Math.round(9*s)}px ${F.bebas}`; c.fillStyle=rgb(236,238,242);
-      c.fillText('R2', .751*W, py+ph*.62); c.restore();
-      textSpaced(d,.751*W,py+ph*.78,F.barlow,5.5,ink,'Ronald',0.02);
+      c.font=`italic 800 ${Math.round(10.5*s)}px ${F.barlow}`; c.fillStyle=rgb(242,243,246);
+      c.fillText('JAZZ CHORUS-120H', .711*W, py+ph*.325); c.restore();
+      rr(c,.636*W,py+ph*.58,W*.040,ph*.32,2.5*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle=rgb(150,152,158); c.lineWidth=0.9*s; c.stroke();
+      c.save(); c.textAlign='center'; c.textBaseline='middle';
+      c.font=`800 ${Math.round(7.5*s)}px ${F.bebas}`; c.fillStyle=rgb(236,238,242);
+      c.fillText('R2', .648*W, py+ph*.71); c.restore();
+      textSpaced(d,.668*W,py+ph*.74,F.barlow,4.5,ink,'Ronald',0.01);
       // piloto rojo
-      const plx=.815*W, ply=py+ph*.66;
-      c.save(); c.globalAlpha=0.4; c.beginPath(); c.arc(plx,ply,12*s,0,7);
-      const gl=c.createRadialGradient(plx,ply,2*s,plx,ply,12*s); gl.addColorStop(0,'rgba(255,70,50,0.9)'); gl.addColorStop(1,'rgba(255,70,50,0)');
+      const plx=.712*W, ply=py+ph*.74;
+      c.save(); c.globalAlpha=0.4; c.beginPath(); c.arc(plx,ply,10*s,0,7);
+      const gl=c.createRadialGradient(plx,ply,2*s,plx,ply,10*s); gl.addColorStop(0,'rgba(255,70,50,0.9)'); gl.addColorStop(1,'rgba(255,70,50,0)');
       c.fillStyle=gl; c.fill(); c.restore();
-      c.beginPath(); c.arc(plx,ply,5.5*s,0,7);
-      const pr=c.createRadialGradient(plx-1.5*s,ply-2*s,0.8*s,plx,ply,5.5*s);
+      c.beginPath(); c.arc(plx,ply,4.5*s,0,7);
+      const pr=c.createRadialGradient(plx-1.2*s,ply-1.6*s,0.6*s,plx,ply,4.5*s);
       pr.addColorStop(0,rgb(255,140,110)); pr.addColorStop(.5,rgb(222,44,30)); pr.addColorStop(1,rgb(120,14,10));
-      c.fillStyle=pr; c.fill(); c.strokeStyle=rgb(80,82,86); c.lineWidth=1*s; c.stroke();
-      // POWER toggle
-      batToggle(d,.905*W,py+ph*.60,9*s,true);
-      textSpaced(d,.905*W,py+ph*.30,F.barlow,7,ink,'POWER',0.03);
-      textSpaced(d,.938*W,py+ph*.50,F.barlow,5.5,inkF,'ON',0.03);
-      textSpaced(d,.938*W,py+ph*.72,F.barlow,5.5,inkF,'OFF',0.03);
-      // ── rejilla de cuadricula con bandas de aluminio ──
-      const gy=H*.445, gh=H*.475, gx=W*.045, gw=W*.91;
-      const band=(yy)=>{ rr(c,gx-6*s,yy,gw+12*s,7*s,3*s);
-        const bg2=c.createLinearGradient(0,yy,0,yy+7*s); bg2.addColorStop(0,rgb(236,238,242)); bg2.addColorStop(.5,rgb(160,163,168)); bg2.addColorStop(1,rgb(210,213,218));
-        c.fillStyle=bg2; c.fill(); c.strokeStyle=rgb(70,72,76); c.lineWidth=0.8*s; c.stroke(); };
-      band(gy-9*s); band(gy+gh+2*s);
-      rr(c,gx,gy,gw,gh,4*s); c.fillStyle=rgb(12,12,13); c.fill();
+      c.fillStyle=pr; c.fill(); c.strokeStyle=rgb(80,82,86); c.lineWidth=0.9*s; c.stroke();
+      // POWER
+      batToggle(d,.760*W,ky+2*s,8*s,true);
+      textSpaced(d,.760*W,topY,F.barlow,6,ink,'POWER',0.02);
+      textSpaced(d,.788*W,ky-8*s,F.barlow,5,inkF,'ON',0.02);
+      textSpaced(d,.788*W,ky+12*s,F.barlow,5,inkF,'OFF',0.02);
+      // ── GRAN rejilla de cuadricula con marco de piping ──
+      const gy=H*.345, gh=H*.545, gx=W*.062, gw=W*.876;
+      rr(c,gx-6*s,gy-6*s,gw+12*s,gh+12*s,7*s); c.fillStyle=rgb(6,6,7); c.fill();
+      rr(c,gx-6*s,gy-6*s,gw+12*s,gh+12*s,7*s);
+      const pipe=c.createLinearGradient(0,gy-6*s,0,gy+gh+6*s);
+      pipe.addColorStop(0,rgb(240,242,246)); pipe.addColorStop(.5,rgb(180,183,188)); pipe.addColorStop(1,rgb(228,231,236));
+      c.strokeStyle=pipe; c.lineWidth=4*s; c.stroke();
+      rr(c,gx,gy,gw,gh,4*s); c.fillStyle=rgb(13,13,14); c.fill();
       c.save(); rr(c,gx,gy,gw,gh,4*s); c.clip();
-      c.strokeStyle='rgba(226,216,186,0.25)'; c.lineWidth=1;
-      for(let xx=gx;xx<gx+gw;xx+=5.5*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
-      for(let yy=gy;yy<gy+gh;yy+=5.5*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
-      c.strokeStyle='rgba(0,0,0,0.5)'; c.lineWidth=1;
-      for(let xx=gx+2.7*s;xx<gx+gw;xx+=5.5*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
+      // cuadricula fina blanca (tela JC)
+      c.strokeStyle='rgba(235,230,214,0.34)'; c.lineWidth=1;
+      for(let xx=gx;xx<gx+gw;xx+=6*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
+      for(let yy=gy;yy<gy+gh;yy+=6*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
+      c.strokeStyle='rgba(0,0,0,0.55)'; c.lineWidth=1.4*s;
+      for(let xx=gx+3*s;xx<gx+gw;xx+=6*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
+      for(let yy=gy+3*s;yy<gy+gh;yy+=6*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
       const sheen=c.createRadialGradient(gx+gw*.5,gy+gh*.45,gh*.25,gx+gw*.5,gy+gh*.5,gw*.55);
-      sheen.addColorStop(0,'rgba(255,255,255,0.05)'); sheen.addColorStop(1,'rgba(0,0,0,0.30)');
+      sheen.addColorStop(0,'rgba(255,255,255,0.06)'); sheen.addColorStop(1,'rgba(0,0,0,0.32)');
       c.fillStyle=sheen; c.fillRect(gx,gy,gw,gh);
       c.restore();
-      // placa Ronald en la rejilla (monograma + nombre)
-      rr(c,gx+gw*.045,gy+gh*.22,W*.135,gh*.56,5*s); c.fillStyle=rgb(8,8,9); c.fill();
-      c.strokeStyle=rgb(200,202,208); c.lineWidth=1.6*s; c.stroke();
+      // placa Ronald grande (monograma + nombre, como la foto)
+      const bpx=gx+gw*.025, bpy=gy+gh*.16, bpw=W*.130, bph=gh*.68;
+      rr(c,bpx,bpy,bpw,bph,5*s); c.fillStyle=rgb(8,8,9); c.fill();
+      rr(c,bpx,bpy,bpw,bph,5*s); c.strokeStyle=rgb(215,217,222); c.lineWidth=2*s; c.stroke();
+      rr(c,bpx+4*s,bpy+4*s,bpw-8*s,bph-8*s,3.5*s); c.strokeStyle='rgba(215,217,222,0.4)'; c.lineWidth=0.9*s; c.stroke();
       c.save(); c.textAlign='center'; c.textBaseline='middle';
-      const bx=gx+gw*.045+W*.0675;
-      c.font=`800 ${Math.round(30*s)}px ${F.bebas}`; c.fillStyle=rgb(238,240,244);
-      c.fillText('R2', bx, gy+gh*.42);
-      c.font=`700 ${Math.round(13*s)}px ${F.barlow}`;
-      c.fillText('Ronald', bx, gy+gh*.66); c.restore();
-      // ── tachas del borde ──
+      const bx=bpx+bpw/2;
+      c.font=`800 ${Math.round(44*s)}px ${F.bebas}`; c.fillStyle=rgb(240,242,246);
+      c.fillText('R2', bx, bpy+bph*.40);
+      c.font=`700 ${Math.round(17*s)}px ${F.barlow}`;
+      c.fillText('Ronald', bx, bpy+bph*.78); c.restore();
+      // ── tachas + esquineras envolventes ──
       const stud=(x,y)=>{ const g=c.createRadialGradient(x-1.5*s,y-1.5*s,0.5*s,x,y,4*s);
         g.addColorStop(0,rgb(150,132,104)); g.addColorStop(1,rgb(52,44,34));
         c.beginPath(); c.arc(x,y,4*s,0,7); c.fillStyle=g; c.fill();
         c.strokeStyle=rgb(20,16,12); c.lineWidth=0.7*s; c.stroke(); };
-      for(let i=0;i<16;i++){ const xx=W*(.075+.85*i/15); stud(xx,H*.045); stud(xx,H*.965); }
-      for(let i=0;i<4;i++){ const yy=H*(.20+.60*i/3); stud(W*.018,yy); stud(W*.982,yy); }
-      // esquineras negras
-      const corner=(cxx,cyy,dx,dy)=>{ const k=H*.085; c.beginPath();
-        c.moveTo(cxx,cyy+dy*k); c.lineTo(cxx,cyy); c.lineTo(cxx+dx*k,cyy);
-        c.quadraticCurveTo(cxx+dx*k*0.35,cyy+dy*k*0.35,cxx,cyy+dy*k); c.closePath();
-        c.fillStyle=rgb(9,9,10); c.fill(); c.strokeStyle='rgba(255,255,255,0.12)'; c.lineWidth=1*s; c.stroke(); };
+      for(let i=0;i<16;i++){ const xx=W*(.075+.85*i/15); stud(xx,H*.045); stud(xx,H*.958); }
+      for(let i=0;i<4;i++){ const yy=H*(.20+.60*i/3); stud(W*.020,yy); stud(W*.980,yy); }
+      const corner=(cxx,cyy,dx,dy)=>{ const kw=W*.045, kh=H*.16;
+        rr(c, dx>0?cxx:cxx-kw, dy>0?cyy:cyy-kh, kw, kh, 6*s);
+        c.fillStyle=rgb(10,10,11); c.fill(); c.strokeStyle='rgba(255,255,255,0.13)'; c.lineWidth=1*s; c.stroke();
+        stud(cxx+dx*kw*.5, cyy+dy*kh*.28); stud(cxx+dx*kw*.5, cyy+dy*kh*.75); };
       corner(0,0,1,1); corner(W,0,-1,1); corner(0,H,1,-1); corner(W,H,-1,-1); } };
 
   // ── BENDER BASSMAN (Fender Bassman 5F6-A tweed) — TWEED tejido dorado con
