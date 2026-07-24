@@ -14,6 +14,17 @@
  *
  * the game: Gain -> Distortion (clean at 0). Treble/Mid/Bass -> tone stack.
  * Reverb/Chorus OFF for songs (RS adds those separately).
+ *
+ * CALIBRADO contra las referencias test logic/jc120 (brit_di; canal 2 =
+ * nuestro canal): barrido ch2_vol_{min,half,max} (RMS +-1 dB, crest +-1 dB,
+ * bandas +-3 dB) y ch2_vol_max_distortion_{half,max} (RMS +-0.4, bandas
+ * +-3.4, coherencias +-0.11). El "default headroom" de la referencia = el
+ * power SS recortando contra rieles fijos (railClip 4x OS; confirmado con
+ * las renders headroom_max, que son limpias como el core sin clip).
+ * RESIDUALES documentados: crest -2.3..-2.9 dB en el barrido de DISTORTION
+ * (el par diodo+rieles aprieta transitorios mas que su modelo) y coherencia
+ * +0.08..0.17 mas limpia en el sweep limpio (hiss/hum del modelo de ref:
+ * su banda 2.5-8k mide 0.09-0.21 de coherencia incluso "limpio").
  */
 #include "DistrhoPlugin.hpp"
 #include "JC120Params.h"
@@ -207,13 +218,26 @@ class JC120Core
 
     Biquad inputHp, inputLp, distPre, distPost;
     Biquad toneBass, toneMid, toneTreble, brightShelf;
+    Biquad ampBite, ampMidTrim, ampLowComp;   // voz amp-only: bite (bleed del pot), mid trim, compensacion LF vs clip
     Biquad speakerLp, speakerThump, speakerBite;
     DcBlock dcBlock;
     SpringReverb spring;
     Chorus chorus;
     DiodeClipper diode;             // real Shockley diode-pair distortion clipper
-    rbshared::Oversampler4x osDiode;   // 4x OS around the only nonlinearity (the diode)
+    rbshared::Oversampler4x osDiode;   // 4x OS around the diode clipper
+    rbshared::Oversampler4x osPower;   // 4x OS around the SS power-rail clip
     static constexpr int kOS = rbshared::Oversampler4x::OS;
+
+    // SS power stage: 2SD736A push-pull against FIXED supply rails, sharp knee.
+    // Matched to the JC-120 reference at its default headroom: the vol sweep
+    // squashes (crest 7.8 -> 5.5 ch2 min->max) and adds the clip fizz up top.
+    static inline float railClip(float pz)
+    {
+        const float rail = 1.0f, knee = 0.06f, t = rail - knee;
+        if (pz >  t) pz =  t + knee * std::tanh((pz - t) / knee);
+        if (pz < -t) pz = -(t + knee * std::tanh((-pz - t) / knee));
+        return pz;
+    }
 
     void updateFilters()
     {
@@ -221,7 +245,7 @@ class JC120Core
         inputLp.setLowPass(sampleRate, 15000.0f, 0.64f);
         // distortion voicing: tighten lows + de-fizz as it's pushed (the JC
         // diode distortion is gritty/buzzy but still solid-state-clean otherwise)
-        distPre.setHighPass(sampleRate, 90.0f + 170.0f * distortion, 0.70f);
+        distPre.setHighPass(sampleRate, 55.0f + 70.0f * distortion, 0.70f);
         distPost.setLowPass(sampleRate, 7400.0f - 1100.0f * distortion, 0.66f);
         // passive tone stack — ranges from the spec (TREBLE 17dB@10k, MIDDLE
         // 13dB@350Hz, BASS 14dB@50Hz) + the fixed BRIGHT (5dB@10kHz) shelf.
@@ -233,6 +257,9 @@ class JC120Core
         toneTreble.setHighShelf(sampleRate, 10000.0f, 0.74f, eqDb(treble, 17.0f));
         // BRIGHT: real = a +5dB @10kHz treble-bleed shelf across the 1M Volume pot. Baked on.
         brightShelf.setHighShelf(sampleRate, 10000.0f, 0.80f, 5.0f);
+        ampBite.setHighShelf(sampleRate, 2500.0f, 0.72f, 8.0f + 7.0f * (1.0f - volume));  // treble-bleed: fuerte a volume bajo
+        ampMidTrim.setPeaking(sampleRate, 500.0f, 0.75f, -5.5f - 2.0f * (1.0f - volume));
+        ampLowComp.setLowShelf(sampleRate, 80.0f, 0.8f, 3.8f * volume);  // el rail clip come LF; la ref los conserva
         // solid-state combo speaker (2x12): gentle thump + top roll-off (opened, miked-cab top)
         speakerThump.setPeaking(sampleRate, 105.0f, 0.85f, 1.0f);
         // The Roland JC speaker/voice is BRIGHT (the amp-only ref top extends to 12.5k). Presence shelf
@@ -247,8 +274,8 @@ public:
     void reset()
     {
         inputHp.reset(); inputLp.reset(); distPre.reset(); distPost.reset();
-        toneBass.reset(); toneMid.reset(); toneTreble.reset(); brightShelf.reset();
-        speakerLp.reset(); speakerThump.reset(); speakerBite.reset(); dcBlock.reset(); diode.reset(); osDiode.reset();
+        toneBass.reset(); toneMid.reset(); toneTreble.reset(); brightShelf.reset(); ampBite.reset(); ampMidTrim.reset(); ampLowComp.reset();
+        speakerLp.reset(); speakerThump.reset(); speakerBite.reset(); dcBlock.reset(); diode.reset(); osDiode.reset(); osPower.reset();
         spring.clear(); chorus.clear();
         updateFilters();
     }
@@ -302,13 +329,13 @@ public:
         // odd-harmonic solid-state JC edge (no tanh fit).
         // DISTORTION pot is a reverse-log (C) 10k — most of the gain is in the top of the sweep.
         const float distC = distortion * distortion;
-        const float drive = 1.0f + 60.0f * distC;
+        const float drive = 1.0f + 42.0f * distC;
         // 4x-oversample ONLY the diode clip (the alias source) — the tone stack,
         // reverb and chorus stay at base rate so their delay lines keep timing.
         float ubd[kOS];
         osDiode.upsample(d * drive, ubd);
         for (int k = 0; k < kOS; ++k) ubd[k] = diode.process(ubd[k]);
-        d = osDiode.downsample(ubd) * 1.9f;          // diodes clamp ~±0.5V -> makeup ~unity
+        d = osDiode.downsample(ubd) * 1.45f;         // diodes clamp ~±0.5V; bajo para no doble-clipear el power
         d = distPost.process(d);
         // clean->distorted blend with makeup so the distorted level ~tracks clean
         const float w = distortion;
@@ -319,11 +346,19 @@ public:
         y = toneMid.process(y);
         y = toneTreble.process(y);
         y = brightShelf.process(y);
+        y = ampMidTrim.process(y);
+        y = ampBite.process(y);
+        y = ampLowComp.process(y);
         y = dcBlock.process(y);
 
-        // VOLUME (clean, high-headroom solid-state — no power saturation)
-        const float vol = 0.30f + 1.10f * volume;
-        y *= vol;
+        // VOLUME drives the SS power stage into its fixed rails (the reference
+        // default headroom): rising volume COMPRESSES, like the real JC pushed.
+        const float powDrive = 2.9f + 4.3f * volume;
+        float up[kOS];
+        osPower.upsample(y * powDrive, up);
+        for (int k = 0; k < kOS; ++k) up[k] = railClip(up[k]);
+        const float powOut = 0.30f * std::pow(10.0f, 0.05f * (-4.7f - 7.7f*volume + 4.2f*volume*volume));
+        y = osPower.downsample(up) * powOut;
 
         // solid-state combo fallback speaker (bypassable for external cab/IR)
         const float ampOnly = y;
@@ -342,9 +377,10 @@ public:
         // with Distortion, so autoGain boosts the clean end and compensates the
         // drive -> multitone RMS stays ~flat (~-14 dBFS) across the Distortion sweep.
         const float autoGain = std::exp(-3.5f * distortion + 1.1f * distortion * distortion);
-        const float level = (3.42f * autoGain) / ((0.55f + 0.95f * volume) * toneEnergy);
+        const float level = (3.42f * autoGain) / toneEnergy;
         // loudness flattening vs Distortion (clean makeup; ~0 dB at distortion 0.5)
-        y *= level * std::pow(10.0f, 0.05f * (-1.979f + 2.727f * distortion + 2.466f * distortion * distortion));
+        y *= level * std::pow(10.0f, 0.05f * (-1.979f + 2.727f * distortion + 2.466f * distortion * distortion
+                                              + 16.7f * distortion - 4.9f * distortion * distortion));
 
         // spring REVERB (parallel send/return)
         if (reverb > 0.0005f)
