@@ -5215,9 +5215,9 @@
       {id:9, cx:.615,cy:.224,r:.018,style:'cream'},   // BURN Middle (RS Mid)
       {id:10,cx:.680,cy:.224,r:.018,style:'cream'},   // BURN Volume
       {id:11,cx:.760,cy:.224,r:.018,style:'cream'} ], // REVERB
-    switches:[
-      {id:3,cx:.140,cy:.224,hs:.009,style:'bat'},     // Norm/Fat   (RS Bright)
-      {id:4,cx:.300,cy:.224,hs:.009,style:'bat'} ],   // Vintage/Burn (RS Gain morph)
+    sw3:[
+      {id:3,cx:.140,cy:.224,hw:16,hh:16,two:true,hidden:true},   // Norm/Fat (RS Bright) — boton pulsador
+      {id:4,cx:.300,cy:.224,hw:16,hh:16,two:true,hidden:true} ], // Vintage/Burn — boton pulsador
     draw(d,vals){ const {ctx:c,W,H,s}=d;
       const ink=rgb(230,230,226), chr=rgb(206,210,216), faint='rgba(206,208,214,0.6)';
       // ── black textured tolex body ──
@@ -5257,7 +5257,7 @@
       // ── black control faceplate (wide, brushed) ──
       const py=H*.09, ph=H*.32, px=W*.025, pw=W*.95;
       rr(c,px-2*s,py-2*s,pw+4*s,ph+4*s,8*s); c.fillStyle=rgb(6,6,8); c.fill();   // bezel
-      const pg=c.createLinearGradient(0,py,0,py+ph); pg.addColorStop(0,rgb(112,113,116)); pg.addColorStop(0.5,rgb(95,96,99)); pg.addColorStop(1,rgb(74,75,78));
+      const pg=c.createLinearGradient(0,py,0,py+ph); pg.addColorStop(0,rgb(45,46,49)); pg.addColorStop(0.5,rgb(33,34,37)); pg.addColorStop(1,rgb(22,23,26));
       rr(c,px,py,pw,ph,6*s); c.fillStyle=pg; c.fill();
       c.save(); rr(c,px,py,pw,ph,6*s); c.clip(); c.strokeStyle='rgba(255,255,255,0.07)'; c.lineWidth=0.7*s;
       for(let yy=py+2.5*s; yy<py+ph; yy+=2.6*s){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
@@ -5302,6 +5302,26 @@
       sqled(.140*W-9*s,ledY,swv(3,0)<0.5); dotled(.140*W+9*s,ledY,swv(3,0)>=0.5);
       textSpaced(d,.300*W,py+ph*.08,F.barlow,6.5,ink,'VINTAGE / BURN',0.01);
       sqled(.300*W-9*s,ledY,swv(4,0)<0.5); dotled(.300*W+9*s,ledY,swv(4,0)>=0.5);
+      // boton pulsador cuadrado: queda HUNDIDO al activarse (como el original)
+      const pushBtn=(x,y,on)=>{
+        rr(c,x-8*s,y-8*s,16*s,16*s,2.5*s); c.fillStyle=rgb(150,152,156); c.fill();
+        c.strokeStyle=rgb(24,24,27); c.lineWidth=1*s; c.stroke();
+        if(on){
+          rr(c,x-6*s,y-6*s,12*s,12*s,2*s); c.fillStyle=rgb(15,15,17); c.fill();
+          c.save(); rr(c,x-6*s,y-6*s,12*s,12*s,2*s); c.clip();
+          c.fillStyle='rgba(0,0,0,0.55)'; c.fillRect(x-6*s,y-6*s,12*s,4*s);
+          c.restore();
+          c.strokeStyle='rgba(255,255,255,0.10)'; c.lineWidth=0.8*s;
+          c.beginPath(); c.moveTo(x-5*s,y+5.5*s); c.lineTo(x+5*s,y+5.5*s); c.stroke();
+        } else {
+          c.save(); c.shadowColor='rgba(0,0,0,0.5)'; c.shadowBlur=3*s; c.shadowOffsetY=2*s;
+          rr(c,x-6.5*s,y-7*s,13*s,13*s,2*s); c.fillStyle=rgb(34,34,38); c.fill(); c.restore();
+          const bgl=c.createLinearGradient(0,y-7*s,0,y+6*s); bgl.addColorStop(0,rgb(66,66,72)); bgl.addColorStop(1,rgb(26,26,30));
+          rr(c,x-6.5*s,y-7*s,13*s,13*s,2*s); c.fillStyle=bgl; c.fill();
+          c.strokeStyle='rgba(255,255,255,0.20)'; c.lineWidth=0.8*s;
+          c.beginPath(); c.moveTo(x-5*s,y-6*s); c.lineTo(x+5*s,y-6*s); c.stroke();
+        } };
+      pushBtn(.140*W,cy,swv(3,0)>=0.5); pushBtn(.300*W,cy,swv(4,0)>=0.5);
       // ── RIGHT: "Super-Nova" script + maker + glossy red jewel ──
       const sxc=.880*W, syc=cy;
       c.save(); c.translate(sxc,syc); c.transform(1,0,-0.17,1,0,0); c.textAlign='center'; c.textBaseline='middle';
@@ -5351,15 +5371,7 @@
       c.lineWidth=3*s; c.strokeStyle=big; c.stroke();
       bolt(-92*s,-20*s,2.4*s); bolt(102*s,14*s,2.4*s);
       c.restore();
-      // ── "Bender" chrome script logo on a subtle recessed plate (grille, lower-left) ──
-      const lx=gx+gw*.18, ly=gy+gh*.55;
-      c.save(); c.translate(lx,ly); c.transform(1,0,-0.18,1,0,0); c.textAlign='center'; c.textBaseline='middle';
-      setFont(d,F.ink,72);
-      c.fillStyle='rgba(0,0,0,0.28)'; c.fillText('Bender',2.5*s,3*s);                       // drop shadow
-      c.lineWidth=2.8*s; c.strokeStyle=rgb(40,42,46); c.strokeText('Bender',0,0);
-      const blg=c.createLinearGradient(0,-27*s,0,27*s); blg.addColorStop(0,rgb(252,253,255)); blg.addColorStop(0.45,rgb(214,218,224)); blg.addColorStop(0.55,rgb(176,180,186)); blg.addColorStop(1,rgb(150,154,160));
-      c.fillStyle=blg; c.fillText('Bender',0,0);
-      c.restore(); } };
+      } };
 
   // ── BENDER DELUXE (Fender '57 Deluxe 5E3) — tweed combo, vista superior 1:1
   //    con la referencia: asa de cuero cosida + panel CROMO espejo (STANDBY /
