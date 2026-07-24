@@ -576,30 +576,43 @@
       return;
     }
     if (style==='jcsilver') {
-      // Roland JC: perilla cilindrica de ALUMINIO moleteado, tapa plana
-      // cepillada con anillos y linea indicadora negra.
+      // Roland JC real: FALDA negra con marca blanca impresa, cuerpo negro de
+      // dientes gruesos que gira y tapa de ALUMINIO hilado plateada.
       c.save(); c.globalAlpha=0.30; c.beginPath();
-      c.ellipse(cx+1*s,cy+1.8*s,R*1.02,R*0.98,0,0,7); c.fillStyle=rgb(0,0,0); c.fill(); c.restore();
-      const eg=c.createRadialGradient(cx-R*0.3,cy-R*0.35,R*0.1,cx,cy,R*1.05);
-      eg.addColorStop(0,rgb(246,248,250)); eg.addColorStop(.55,rgb(196,199,204)); eg.addColorStop(1,rgb(126,129,134));
-      c.beginPath(); c.arc(cx,cy,R,0,7); c.fillStyle=eg; c.fill();
-      c.strokeStyle=rgb(68,70,74); c.lineWidth=0.9*s; c.stroke();
-      c.lineWidth=1.2*s;
-      for(let i=0;i<30;i++){ const t=i/30*Math.PI*2+a;
-        c.strokeStyle=(i%2)?'rgba(0,0,0,0.30)':'rgba(255,255,255,0.35)';
-        c.beginPath();
-        c.moveTo(cx+R*0.84*Math.cos(t),cy+R*0.84*Math.sin(t));
-        c.lineTo(cx+R*0.99*Math.cos(t),cy+R*0.99*Math.sin(t)); c.stroke(); }
-      const tg=c.createRadialGradient(cx-R*0.25,cy-R*0.3,R*0.05,cx,cy,R*0.85);
-      tg.addColorStop(0,rgb(240,242,245)); tg.addColorStop(.6,rgb(206,209,213)); tg.addColorStop(1,rgb(158,161,166));
-      c.beginPath(); c.arc(cx,cy,R*0.82,0,7); c.fillStyle=tg; c.fill();
-      c.strokeStyle='rgba(90,92,96,0.6)'; c.lineWidth=0.8*s; c.stroke();
-      for(let rr2=R*0.15; rr2<R*0.78; rr2+=R*0.09){
+      c.ellipse(cx+1*s,cy+1.8*s,R*1.04,R*0.98,0,0,7); c.fillStyle=rgb(0,0,0); c.fill(); c.restore();
+      // falda negra
+      const sk=c.createRadialGradient(cx-R*0.3,cy-R*0.35,R*0.1,cx,cy,R*1.05);
+      sk.addColorStop(0,rgb(56,56,58)); sk.addColorStop(.6,rgb(28,28,30)); sk.addColorStop(1,rgb(10,10,11));
+      c.beginPath(); c.arc(cx,cy,R,0,7); c.fillStyle=sk; c.fill();
+      c.strokeStyle=rgb(4,4,5); c.lineWidth=1*s; c.stroke();
+      // marca blanca del indicador en la falda
+      c.beginPath(); c.moveTo(cx+R*0.72*Math.cos(a),cy+R*0.72*Math.sin(a));
+      c.lineTo(cx+R*0.97*Math.cos(a),cy+R*0.97*Math.sin(a));
+      c.lineCap='round'; c.strokeStyle=rgb(240,241,244); c.lineWidth=2.4*s; c.stroke(); c.lineCap='butt';
+      // cuerpo de dientes gruesos (gira con el valor)
+      const lobes=10;
+      c.beginPath();
+      for(let i=0;i<=lobes*8;i++){ const t=i/(lobes*8)*Math.PI*2;
+        const rr2=R*(0.72-0.10*Math.pow((Math.cos(lobes*(t-a))+1)*0.5,1.4));
+        const xx=cx+rr2*Math.cos(t), yy=cy+rr2*Math.sin(t);
+        if(i)c.lineTo(xx,yy); else c.moveTo(xx,yy); }
+      c.closePath();
+      const bg2=c.createRadialGradient(cx-R*0.25,cy-R*0.3,R*0.06,cx,cy,R*0.75);
+      bg2.addColorStop(0,rgb(66,66,70)); bg2.addColorStop(.55,rgb(34,34,36)); bg2.addColorStop(1,rgb(12,12,13));
+      c.fillStyle=bg2; c.fill();
+      c.strokeStyle=rgb(5,5,6); c.lineWidth=0.9*s; c.stroke();
+      // tapa de aluminio hilado
+      const tg=c.createRadialGradient(cx-R*0.20,cy-R*0.24,R*0.04,cx,cy,R*0.55);
+      tg.addColorStop(0,rgb(250,251,253)); tg.addColorStop(.55,rgb(210,213,217)); tg.addColorStop(1,rgb(150,153,158));
+      c.beginPath(); c.arc(cx,cy,R*0.50,0,7); c.fillStyle=tg; c.fill();
+      c.strokeStyle=rgb(90,92,96); c.lineWidth=0.9*s; c.stroke();
+      for(let rr2=R*0.10; rr2<R*0.47; rr2+=R*0.07){
         c.beginPath(); c.arc(cx,cy,rr2,0,7);
-        c.strokeStyle='rgba(120,122,126,0.16)'; c.lineWidth=0.7*s; c.stroke(); }
-      c.beginPath(); c.moveTo(cx+R*0.20*Math.cos(a),cy+R*0.20*Math.sin(a));
-      c.lineTo(cx+R*0.78*Math.cos(a),cy+R*0.78*Math.sin(a));
-      c.lineCap='round'; c.strokeStyle=rgb(30,30,32); c.lineWidth=2.2*s; c.stroke(); c.lineCap='butt';
+        c.strokeStyle='rgba(120,122,126,0.18)'; c.lineWidth=0.7*s; c.stroke(); }
+      // destello radial
+      c.save(); c.beginPath(); c.arc(cx,cy,R*0.48,0,7); c.clip();
+      c.globalAlpha=0.35; c.beginPath(); c.moveTo(cx,cy); c.arc(cx,cy,R*0.50,-2.3,-1.8); c.closePath();
+      c.fillStyle=rgb(255,255,255); c.fill(); c.restore();
       return;
     }
     // pointer + tick fan (default)
