@@ -6112,10 +6112,14 @@
       vg.addColorStop(0,'rgba(255,255,255,0.02)'); vg.addColorStop(1,'rgba(0,0,0,0.32)');
       c.fillStyle=vg; c.fillRect(0,0,W,H);
       const bolt=(x,y,r)=>{ r=r||2.6*s; const g=c.createRadialGradient(x-r*0.3,y-r*0.3,r*0.15,x,y,r);
-        g.addColorStop(0,rgb(232,234,238)); g.addColorStop(1,rgb(110,114,120));
-        c.beginPath(); c.arc(x,y,r,0,7); c.fillStyle=g; c.fill(); c.strokeStyle=rgb(48,50,54); c.lineWidth=0.7*s; c.stroke(); };
+        g.addColorStop(0,rgb(240,212,140)); g.addColorStop(1,rgb(132,102,50));
+        c.beginPath(); c.arc(x,y,r,0,7); c.fillStyle=g; c.fill(); c.strokeStyle=rgb(58,44,20); c.lineWidth=0.7*s; c.stroke(); };
       // asa arriba
       const hx0=.43*W,hx1=.57*W,hcy=H*.045,hh=H*.030;
+      [hx0,hx1].forEach(bx=>{ rr(c,bx-14*s,hcy-8*s,28*s,16*s,3*s);
+        const mg=c.createLinearGradient(0,hcy-8*s,0,hcy+8*s); mg.addColorStop(0,rgb(232,202,128)); mg.addColorStop(.5,rgb(190,156,86)); mg.addColorStop(1,rgb(136,106,52));
+        c.fillStyle=mg; c.fill(); c.strokeStyle=rgb(64,50,24); c.lineWidth=0.9*s; c.stroke();
+        bolt(bx-7*s,hcy,2*s); bolt(bx+7*s,hcy,2*s); });
       rr(c,hx0,hcy-hh,hx1-hx0,2*hh,hh); const hg=c.createLinearGradient(0,hcy-hh,0,hcy+hh); hg.addColorStop(0,rgb(42,42,46)); hg.addColorStop(1,rgb(13,13,15));
       c.fillStyle=hg; c.fill(); c.strokeStyle=rgb(8,8,10); c.lineWidth=1.2*s; c.stroke();
       // esquineras negras con tornillo
@@ -6164,28 +6168,31 @@
       const cyP=py+ph*.50, topY=py+ph*.115, botY=py+ph*.885, ky=.810*H;
       // ── rockers POWER (rojo iluminado) y STANDBY (negro) ──
       const rocker=(x,red)=>{
-        rr(c,x-13*s,cyP-17*s,26*s,34*s,3*s); c.fillStyle=rgb(16,14,12); c.fill();
-        c.strokeStyle='rgba(255,255,255,0.20)'; c.lineWidth=0.9*s; c.stroke();
-        if(red){ const rg2=c.createLinearGradient(0,cyP-13*s,0,cyP+13*s);
-          rg2.addColorStop(0,rgb(255,110,80)); rg2.addColorStop(.5,rgb(220,44,28)); rg2.addColorStop(1,rgb(130,16,10));
-          rr(c,x-9*s,cyP-13*s,18*s,26*s,2*s); c.fillStyle=rg2; c.fill();
-          c.save(); c.globalAlpha=0.35; c.beginPath(); c.arc(x,cyP,20*s,0,7);
-          const gl=c.createRadialGradient(x,cyP,4*s,x,cyP,20*s); gl.addColorStop(0,'rgba(255,90,50,0.9)'); gl.addColorStop(1,'rgba(255,90,50,0)');
+        rr(c,x-17*s,cyP-23*s,34*s,46*s,3.5*s); c.fillStyle=rgb(14,12,10); c.fill();
+        c.strokeStyle='rgba(255,255,255,0.22)'; c.lineWidth=1*s; c.stroke();
+        if(red){ const rg2=c.createLinearGradient(0,cyP-18*s,0,cyP+18*s);
+          rg2.addColorStop(0,rgb(255,120,86)); rg2.addColorStop(.5,rgb(224,46,28)); rg2.addColorStop(1,rgb(128,16,10));
+          rr(c,x-12*s,cyP-18*s,24*s,36*s,2.5*s); c.fillStyle=rg2; c.fill();
+          c.save(); c.globalAlpha=0.38; c.beginPath(); c.arc(x,cyP,28*s,0,7);
+          const gl=c.createRadialGradient(x,cyP,6*s,x,cyP,28*s); gl.addColorStop(0,'rgba(255,90,50,0.9)'); gl.addColorStop(1,'rgba(255,90,50,0)');
           c.fillStyle=gl; c.fill(); c.restore();
-          c.fillStyle='rgba(255,230,220,0.5)'; c.fillRect(x-7*s,cyP-11*s,14*s,3*s);
-        } else { const bg2=c.createLinearGradient(0,cyP-13*s,0,cyP+13*s);
-          bg2.addColorStop(0,rgb(70,70,76)); bg2.addColorStop(.5,rgb(38,38,42)); bg2.addColorStop(1,rgb(18,18,20));
-          rr(c,x-9*s,cyP-13*s,18*s,26*s,2*s); c.fillStyle=bg2; c.fill();
-          c.fillStyle='rgba(255,255,255,0.14)'; c.fillRect(x-7*s,cyP-11*s,14*s,3*s); } };
-      rocker(.085*W,true); rocker(.135*W,false);
-      textSpaced(d,.085*W,botY,F.barlow,6.5,ink,'POWER',0.03);
-      textSpaced(d,.135*W,botY,F.barlow,6.5,ink,'STANDBY',0.02);
+          c.fillStyle='rgba(255,232,222,0.55)'; c.fillRect(x-10*s,cyP-15*s,20*s,4*s);
+          c.fillStyle='rgba(90,10,6,0.5)'; c.fillRect(x-10*s,cyP+11*s,20*s,4*s);
+        } else { const bg2=c.createLinearGradient(0,cyP-18*s,0,cyP+18*s);
+          bg2.addColorStop(0,rgb(74,74,80)); bg2.addColorStop(.5,rgb(38,38,42)); bg2.addColorStop(1,rgb(16,16,18));
+          rr(c,x-12*s,cyP-18*s,24*s,36*s,2.5*s); c.fillStyle=bg2; c.fill();
+          c.fillStyle='rgba(255,255,255,0.16)'; c.fillRect(x-10*s,cyP-15*s,20*s,4*s);
+          c.fillStyle='rgba(0,0,0,0.45)'; c.fillRect(x-10*s,cyP+11*s,20*s,4*s); } };
+      rocker(.085*W,true); rocker(.140*W,false);
+      textSpaced(d,.085*W,py+ph*.06,F.barlow,6,inkF,'0',0.02); textSpaced(d,.140*W,py+ph*.06,F.barlow,6,inkF,'0',0.02);
+      textSpaced(d,.085*W,botY,F.barlow,6.5,ink,'1   POWER',0.03);
+      textSpaced(d,.140*W,botY,F.barlow,6.5,ink,'1   STANDBY',0.02);
       // bloque JCM 800 / LEAD SERIES
       c.save(); c.textAlign='left'; c.textBaseline='middle';
-      c.font=`italic 800 ${Math.round(15*s)}px ${F.barlow}`; c.fillStyle=rgb(20,16,10);
-      c.fillText('JCM 800', .185*W, cyP-8*s);
-      c.font=`italic 700 ${Math.round(10.5*s)}px ${F.barlow}`;
-      c.fillText('LEAD SERIES', .185*W, cyP+9*s); c.restore();
+      c.font=`italic 800 ${Math.round(21*s)}px ${F.barlow}`; c.fillStyle=rgb(22,17,10);
+      c.fillText('JCM 800', .192*W, cyP-10*s);
+      c.font=`italic 700 ${Math.round(13.5*s)}px ${F.barlow}`;
+      c.fillText('LEAD SERIES', .192*W, cyP+11*s); c.restore();
       // ── abanicos 0-10 (pares) + labels ──
       const KR=.0140*W;
       const fan=(kx)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
@@ -6205,7 +6212,7 @@
       // ── jacks HIGH / LOW SENSITIVITY + cable ──
       const jx=.678*W, jyH=py+ph*.30, jyL=py+ph*.70;
       const jack=(jx2,jy2)=>{ c.beginPath(); c.arc(jx2,jy2,7.5*s,0,7); c.fillStyle=rgb(14,13,13); c.fill();
-        c.strokeStyle=rgb(30,26,20); c.lineWidth=2*s; c.stroke();
+        c.strokeStyle=rgb(168,140,78); c.lineWidth=2.2*s; c.stroke();
         c.beginPath(); c.arc(jx2,jy2,2.5*s,0,7); c.fillStyle=rgb(52,50,46); c.fill(); };
       jack(jx,jyH); jack(jx,jyL);
       textSpaced(d,jx+22*s,jyH,F.barlow,6.5,ink,'HIGH',0.03);
