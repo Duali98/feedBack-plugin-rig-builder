@@ -5304,21 +5304,21 @@
       sqled(.300*W-9*s,ledY,swv(4,0)<0.5); dotled(.300*W+9*s,ledY,swv(4,0)>=0.5);
       // boton pulsador cuadrado: queda HUNDIDO al activarse (como el original)
       const pushBtn=(x,y,on)=>{
-        rr(c,x-8*s,y-8*s,16*s,16*s,2.5*s); c.fillStyle=rgb(150,152,156); c.fill();
-        c.strokeStyle=rgb(24,24,27); c.lineWidth=1*s; c.stroke();
-        if(on){
-          rr(c,x-6*s,y-6*s,12*s,12*s,2*s); c.fillStyle=rgb(15,15,17); c.fill();
+        rr(c,x-8*s,y-8*s,16*s,16*s,2.5*s); c.fillStyle=rgb(22,22,25); c.fill();
+        c.strokeStyle='rgba(220,222,226,0.35)'; c.lineWidth=1*s; c.stroke();
+        if(on){   // hundido
+          rr(c,x-6*s,y-6*s,12*s,12*s,2*s); c.fillStyle=rgb(186,177,150); c.fill();
           c.save(); rr(c,x-6*s,y-6*s,12*s,12*s,2*s); c.clip();
-          c.fillStyle='rgba(0,0,0,0.55)'; c.fillRect(x-6*s,y-6*s,12*s,4*s);
+          c.fillStyle='rgba(60,50,30,0.45)'; c.fillRect(x-6*s,y-6*s,12*s,4*s);
           c.restore();
-          c.strokeStyle='rgba(255,255,255,0.10)'; c.lineWidth=0.8*s;
+          c.strokeStyle='rgba(255,250,235,0.35)'; c.lineWidth=0.8*s;
           c.beginPath(); c.moveTo(x-5*s,y+5.5*s); c.lineTo(x+5*s,y+5.5*s); c.stroke();
-        } else {
+        } else {  // saliente
           c.save(); c.shadowColor='rgba(0,0,0,0.5)'; c.shadowBlur=3*s; c.shadowOffsetY=2*s;
-          rr(c,x-6.5*s,y-7*s,13*s,13*s,2*s); c.fillStyle=rgb(34,34,38); c.fill(); c.restore();
-          const bgl=c.createLinearGradient(0,y-7*s,0,y+6*s); bgl.addColorStop(0,rgb(66,66,72)); bgl.addColorStop(1,rgb(26,26,30));
+          rr(c,x-6.5*s,y-7*s,13*s,13*s,2*s); c.fillStyle=rgb(214,205,178); c.fill(); c.restore();
+          const bgl=c.createLinearGradient(0,y-7*s,0,y+6*s); bgl.addColorStop(0,rgb(250,243,221)); bgl.addColorStop(1,rgb(198,189,161));
           rr(c,x-6.5*s,y-7*s,13*s,13*s,2*s); c.fillStyle=bgl; c.fill();
-          c.strokeStyle='rgba(255,255,255,0.20)'; c.lineWidth=0.8*s;
+          c.strokeStyle='rgba(255,253,244,0.65)'; c.lineWidth=0.8*s;
           c.beginPath(); c.moveTo(x-5*s,y-6*s); c.lineTo(x+5*s,y-6*s); c.stroke();
         } };
       pushBtn(.140*W,cy,swv(3,0)>=0.5); pushBtn(.300*W,cy,swv(4,0)>=0.5);
@@ -5326,17 +5326,26 @@
       const sxc=.880*W, syc=cy;
       c.save(); c.translate(sxc,syc); c.transform(1,0,-0.17,1,0,0); c.textAlign='center'; c.textBaseline='middle';
       const slg=c.createLinearGradient(0,-16*s,0,16*s); slg.addColorStop(0,rgb(252,252,254)); slg.addColorStop(1,rgb(216,220,226));
-      setFont(d,F.ink,21); c.lineWidth=2*s; c.strokeStyle=rgb(14,14,16);
-      c.strokeText('Super',-20*s,-6*s); c.fillStyle=slg; c.fillText('Super',-20*s,-6*s);
-      setFont(d,F.ink,18); c.strokeText('-Nova',26*s,8*s); c.fillStyle=slg; c.fillText('-Nova',26*s,8*s);
+      setFont(d,F.ink,28); c.lineWidth=2.4*s; c.strokeStyle=rgb(14,14,16);
+      c.strokeText('Super',-26*s,-9*s); c.fillStyle=slg; c.fillText('Super',-26*s,-9*s);
+      setFont(d,F.ink,24); c.strokeText('-Nova',34*s,11*s); c.fillStyle=slg; c.fillText('-Nova',34*s,11*s);
       c.restore();
       textSpaced(d,sxc,syc+ph*.30,F.barlow,7.5,rgb(228,230,234),'BENDER MUSICAL INSTRUMENTS',0.02);
-      const jx=.962*W;
-      c.beginPath(); c.arc(jx,cy,8*s,0,7); c.fillStyle=rgb(40,40,44); c.fill();
-      c.beginPath(); c.arc(jx,cy,8*s,0,7); c.strokeStyle=chr; c.lineWidth=2*s; c.stroke();
-      const jg=c.createRadialGradient(jx-2*s,cy-2*s,0.5*s,jx,cy,5.5*s); jg.addColorStop(0,rgb(255,150,140)); jg.addColorStop(0.5,rgb(220,46,40)); jg.addColorStop(1,rgb(120,16,14));
-      c.beginPath(); c.arc(jx,cy,5.5*s,0,7); c.fillStyle=jg; c.fill();
-      c.beginPath(); c.arc(jx-2*s,cy-2*s,1.6*s,0,7); c.fillStyle='rgba(255,235,230,0.8)'; c.fill();
+      const jx=.945*W;
+      c.save(); c.globalAlpha=0.35; c.beginPath(); c.arc(jx,cy,18*s,0,7);
+      const jh=c.createRadialGradient(jx,cy,6*s,jx,cy,18*s);
+      jh.addColorStop(0,'rgba(255,80,60,0.8)'); jh.addColorStop(1,'rgba(255,80,60,0)');
+      c.fillStyle=jh; c.fill(); c.restore();
+      c.beginPath(); c.arc(jx,cy,12*s,0,7); c.fillStyle=rgb(40,40,44); c.fill();
+      c.beginPath(); c.arc(jx,cy,12*s,0,7); c.strokeStyle=chr; c.lineWidth=2.2*s; c.stroke();
+      const jg=c.createRadialGradient(jx-3*s,cy-3.5*s,1*s,jx,cy,9*s); jg.addColorStop(0,rgb(255,150,140)); jg.addColorStop(0.5,rgb(220,46,40)); jg.addColorStop(1,rgb(110,14,12));
+      c.beginPath(); c.arc(jx,cy,9*s,0,7); c.fillStyle=jg; c.fill();
+      c.save(); c.strokeStyle='rgba(90,10,8,0.5)'; c.lineWidth=1*s;
+      for(let i=0;i<8;i++){ const aa=i/8*Math.PI*2+0.4; c.beginPath();
+        c.moveTo(jx+3.4*s*Math.cos(aa),cy+3.4*s*Math.sin(aa));
+        c.lineTo(jx+8.4*s*Math.cos(aa),cy+8.4*s*Math.sin(aa)); c.stroke(); }
+      c.beginPath(); c.arc(jx,cy,3.4*s,0,7); c.stroke(); c.restore();
+      c.beginPath(); c.arc(jx-3*s,cy-3.5*s,2*s,0,7); c.fillStyle='rgba(255,235,230,0.85)'; c.fill();
       // ── silver/black Fender-style grille cloth (lower portion) ──
       const gy=py+ph+H*.045, gh=H*.94-gy, gx=W*.035, gw=W*.93;
       rr(c,gx-3.5*s,gy-3.5*s,gw+7*s,gh+7*s,9*s); c.fillStyle=rgb(16,16,18); c.fill();   // black frame
