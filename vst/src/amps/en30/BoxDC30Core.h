@@ -1,7 +1,22 @@
 #ifndef BOX_DC30_CORE_H
 #define BOX_DC30_CORE_H
 //
-// BoxDC30Core - Vox AC30 Top Boost (parody "BOX AC30"), REBUILT Guitarix-style:
+// BoxDC30Core - Vox AC30 Top Boost (parody "BOX AC30"), REBUILT Guitarix-style.
+//
+// RECALIBRADO 2026-07-25 contra la GRILLA A2 (capturas reales del AC30 CH
+// contra carga reactiva, test logic/ac30_a2/, 13 puntos: barrido V del TB,
+// barrido Tone Cut, esquinas de EQ y canal Normal; Master 0.6 = punto de
+// operacion equivalente al master-max del rig de captura). Los shelves
+// "Ruby" anteriores modelaban el line-out SIN carga (mas brillante); la voz
+// loadBassRes/loadMidBody/loadUpperTrim/loadNormalAir es la correccion
+// contra carga. Hallazgos clave del fit: el Bass actua en el nodo LOW del
+// stack (con low fijo el Bass no cortaba graves), la ventana de breakup
+// midWindow pone la distorsion que faltaba en V5-V8 sin ensuciar V2/V10, y
+// el wrapper re-escalono rbAmpLvl (+6.5 dB headroom) porque limitaba picos.
+// Resultado: coherencias +-0.12, crest +-1.3 dB, bandas +-1.7 dB (sweep TB).
+// RESIDUALES documentados: 5-10k -1.7..-3.1 (fizz/hiss de la captura, no se
+// persigue), mids +0.09..0.12 mas limpios a V5/V8, PUSH (B7+T8) +3.3 en
+// low-mids, y el canal Normal a V3 mas sucio que el real (caso borde).
 // separate Normal/Top Boost input paths feed the real LTP/EL84 output topology.
 // Each nonlinear stage uses anti-aliasing, a Koren tube table and a per-stage
 // DC block, so it remains stable at any supported oversampled rate.
@@ -19,17 +34,17 @@ static inline float clamp01(float v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
 
 static inline float gainLoudnessMakeupDb(float gain, bool topBoost)
 {
-    // Static post-circuit calibration measured with the Brit DI at 48 kHz,
-    // Cab Sim off, Master 0.60. Each table holds its channel at -18.6 dBFS RMS
-    // over the real A500K Volume sweep. Since this gain is applied after the
+    // Static post-circuit calibration RE-MEASURED (recalibracion vs grilla A2,
+    // 2026-07-25) con el Brit DI a 48 kHz, Cab Sim off, Master 0.60, TC 0.5.
+    // Cada tabla sostiene su canal en -18.6 dBFS RMS sobre el sweep A500K. Since this gain is applied after the
     // PI, EL84s and OT, it cannot alter breakup, sag or harmonic structure.
     static const float kNormalDb[11] = {
-        12.115f, 4.905f, 2.144f, 0.093f,-1.592f,-3.032f,
-        -4.277f,-5.348f,-6.238f,-6.899f,-7.304f
+        17.748f, 9.230f, 5.000f, -1.622f, -4.492f, -7.372f,
+        -8.930f, -9.615f, -9.850f, -9.434f, -8.634f
     };
     static const float kTopBoostDb[11] = {
-         8.556f, 4.328f, 2.447f, 0.685f,-1.029f,-2.681f,
-        -4.177f,-5.435f,-6.411f,-7.076f,-7.489f
+        15.053f, 8.660f, 5.029f, -1.993f, -4.995f, -8.223f,
+        -10.001f, -10.807f, -11.062f, -10.527f, -9.495f
     };
     const float* const kDb = topBoost ? kTopBoostDb : kNormalDb;
     const float p = 10.0f * clamp01(gain);
@@ -104,7 +119,7 @@ struct Ac30OutputTransformer {
     float coreMix = 0.12f;
 
     void set(float sr, float hot) {
-        otHp.set(sr, 38.0f);                                      // finite OT primary inductance
+        otHp.set(sr, 44.0f);                                      // finite OT primary inductance (44: sub medido vs A2)
         otLeakLp.set(sr, 22000.0f);                               // OT leakage/iron loss only, no speaker rolloff
         fluxLp.set(sr, 24.0f);                                    // low-frequency core flux memory
         // Unloaded digital line-outs were several dB darker than the Ruby
@@ -187,8 +202,8 @@ struct Ac30CathodeFollower {
         const float v = clamp01(volume);
         // Keep the first half open and chimey; grid-current density rises
         // mainly over the upper half of the real Volume rotation.
-        drive = 1.0f + 8.0f * v * v * v * v;
-        shapeMix = v * v;
+        drive = 1.0f + 8.8f * v * v * v * v;
+        shapeMix = 1.15f * v * v;
     }
 
     inline float process(float x) {
@@ -225,7 +240,7 @@ struct Ac30ToneCut {
         // Ruby's half-position transfer is much closer to the real B220K
         // network than the old square-root shortcut. Keep the same full-cut
         // endpoint while opening the useful first half of the rotation.
-        amount = 0.84f * std::pow(k, 1.30f);
+        amount = 0.76f * std::pow(k, 1.45f);   // medido vs A2 TC4/TC7 (0.84/1.30 cortaba de mas)
     }
 
     inline float process(float x) {
@@ -248,6 +263,7 @@ struct BoxDC30Core {
     rbtube::PowerAmpPP power;            // real class-A push-pull EL84 (no NFB, AC30)
     rbtube::ToneStackYeh tonestack;     // real Vox Top Boost R/C tone network (Yeh model)
     Biquad bright, rubyChime, rubyAir;
+    Biquad loadBassRes, loadMidBody, loadUpperTrim, loadNormalAir;  // voz contra carga reactiva (ref A2)
     Ac30ToneCut toneCut;
     Ac30OutputTransformer outputTransformer;
     Ac30FallbackSpeaker fallbackSpeaker;
@@ -290,6 +306,7 @@ struct BoxDC30Core {
         normalVolumeCouple.reset(); topVolumeCouple.reset(); coupleToPi.reset(); topFollower.reset();
         phaseInverter.reset(); supply.reset(); power.reset();
         tonestack.reset(); bright.reset(); rubyChime.reset(); rubyAir.reset(); toneCut.reset();
+        loadBassRes.reset(); loadMidBody.reset(); loadUpperTrim.reset(); loadNormalAir.reset();
         outputTransformer.reset(); fallbackSpeaker.reset(); lfoPhase=0;
         lastPowerLoad=lastScreenLoad=lastPreampLoad=0; }
 
@@ -321,7 +338,10 @@ struct BoxDC30Core {
         // 100%. Keep circuit excitation monotonic; loudness correction belongs
         // only in the post-circuit makeup table below.
         const float activePanelVol = clamp01(nGate * pNVol + tbGate * pTBVol);
-        const float driveVol = 0.10f + 0.27f * std::sqrt(activePanelVol);
+        // Floor mas bajo a volumen bajo: el A500K real a 2/10 casi no excita el
+        // PI/EL84 (V2 real: residual de graves 0.13; el nuestro daba 0.32). El
+        // makeup POST-circuito repone la sonoridad, no hace falta drive.
+        const float driveVol = 0.05f + 0.32f * std::pow(activePanelVol, 0.75f);
         masterElectrical = master;
         // Ruby references use Master 0.60. The earlier circuit fit used 0.72,
         // leaving the PI/EL84 chain too clean at the actual reference setting.
@@ -330,11 +350,13 @@ struct BoxDC30Core {
         masterDriveElectrical = std::pow(pMaster, 1.75f);
         normalMiller.set(sr, 56000.0f, 60.0f, 9.0f);
         topMiller.set(sr, 56000.0f, 52.0f, 8.0f);
-        normalVolumeCouple.set(sr, 1000000.0f, 47.0e-9f, normalSourceOhms, 0.18f, 0.36f, 1.20f);
+        normalVolumeCouple.set(sr, 1000000.0f, 47.0e-9f, normalSourceOhms, 0.26f, 0.36f,
+                               0.40f + 0.80f * nvol);   // blocking crece con vol (N_V3 real limpio, medido vs A2)
         // C9 470 pF is the series plate-to-Top-Boost-volume coupling shown in
         // the preamp schematic. It is the source of the Brilliant channel's
         // deliberate bass cut; C15/C82 belong to its bypass/loading network.
-        topVolumeCouple.set(sr, 1000000.0f, 470.0e-12f, tbSourceOhms, 0.16f, 0.40f, 1.20f);
+        topVolumeCouple.set(sr, 1000000.0f, 470.0e-12f, tbSourceOhms, 0.26f, 0.40f,
+                            0.40f + 0.80f * vol);   // umbral 0.26 + shift con vol: a V2 pumpeaba la ganancia (spread +6-9 dB vs A2)
         coupleToPi.set(sr, 1000000.0f, 47.0e-9f, masterSourceOhms, 0.18f, 0.45f, 1.20f);
         topFollower.set(sr, pTBVol);
         // Vox AC30C2 Top Boost tone stack, from Vox_ac30c2.pdf:
@@ -342,19 +364,27 @@ struct BoxDC30Core {
         // C23 56pF, C28/C38 22nF. Bright cap and Cut are separate real networks.
         const float brightCapHz = 1.0f / (2.0f * kPi * std::fmax(22000.0f, tbSourceOhms) * 120.0e-12f);
         bright.highShelf(sr, std::fmax(2600.0f, std::fmin(11000.0f, brightCapHz)),
-                         4.0f + 6.0f * pBright * (1.0f - 0.65f * vol)); // C9/C82 base brilliance + optional extra bright amount
+                         2.2f + 6.0f * pBright * (1.0f - 0.65f * vol)); // C9/C82 base brilliance (2.2: medido vs A2 a Master 0.6)
         // The aligned Ruby renders retain more unloaded Top Boost voltage above
         // 4 kHz, especially at low Volume. These shelves represent the measured
         // direct-output/OT response and are disabled on the Normal input.
         const float topWeight = tbGate;
-        rubyChime.highShelf(sr, 3800.0f, topWeight * (1.2f + 2.3f * (1.0f - pTBVol)));
-        rubyAir.highShelf(sr, 8500.0f, topWeight * (5.0f + 1.0f * (1.0f - pTBVol)));
-        tonestack.setComponents(ac30pot::kVr3Treble, ac30pot::kVr4Bass, 10.0e3, 100.0e3,
+        // Contra carga reactiva (ref A2) el top NO crece a volumen bajo — el
+        // escalado (1-vol) venia del line-out Ruby sin carga y dejaba V2 +4 dB
+        // brillante de mas. Shelves planas.
+        rubyChime.highShelf(sr, 3800.0f, topWeight * 1.8f);
+        const float mwAir = (pTBVol - 0.62f) / 0.42f;
+        rubyAir.highShelf(sr, 8500.0f, topWeight * (5.6f + 1.2f * std::fmax(0.0f, 1.0f - mwAir * mwAir)));
+        // Mid-leg 22k (no 10k): medido vs la grilla A2, el scoop a 10k dejaba
+        // 300-800 Hz 5-7.7 dB bajo el amp real; subirlo EN LA FUENTE conserva
+        // el crest (el boost post +5 dB engordaba el RMS y aplastaba crest).
+        tonestack.setComponents(ac30pot::kVr3Treble, ac30pot::kVr4Bass, 16.0e3, 100.0e3,
                                 56.0e-12, 22.0e-9, 22.0e-9);
-        // ToneStackYeh order is (treble, middle-node, low-node). In the Vox
-        // network the real Bass pot is the active middle/body node; the low
-        // leg is fixed because the AC30 has no third tone control.
-        tonestack.update(sr, treble, bass, 0.5f);
+        // ToneStackYeh order is (treble, middle-node, low-node). MEDIDO vs la
+        // grilla A2: el Bass real actua sobre el nodo LOW (con Bass=3 el amp
+        // corta -5.7 dB de graves que el mapeo anterior — bass en el nodo MID
+        // con low fijo 0.5 — dejaba pasar). El nodo mid queda fijo (sin pot).
+        tonestack.update(sr, treble, 0.35f, bass);
         toneCut.set(sr, pCut);
         // GZ34 supply + long-tail-pair PI + EL84 class-A push-pull. The PI now clips
         // and unbalances before the EL84s; B+ droops through power/screen/preamp nodes.
@@ -362,23 +392,33 @@ struct BoxDC30Core {
         const float driven = activePanelVol * activePanelVol;
         const float cranked = driven * driven;
         const float breakupShoulder = driven * (1.0f - activePanelVol);
+        const float mw = (activePanelVol - 0.65f) / 0.35f;
+        const float midWindow = std::fmax(0.0f, 1.0f - mw * mw);   // 0 bajo V3 (filtraba al Normal V3), ~0.8 en V5/V8, 0 en V10
         // Split the extra excitation between a broad upper-half rise and the
         // final cranked region.  The total at 10 stays unchanged, while noon
         // now reaches Ruby's measured breakup instead of remaining nearly
         // identical to the clean waveform.
-        phaseInverter.setVoxAc30(sr, 1.25f + 2.30f * driveVol
-                                 + 1.20f * driven + 3.50f * cranked
-                                 + 5.5f * breakupShoulder,
+        phaseInverter.setVoxAc30(sr, 0.95f + 2.60f * driveVol
+                                 + 1.60f * driven + 3.50f * cranked
+                                 + 9.0f * breakupShoulder + 3.0f * midWindow,
                                  0.92f, 0.075f);
-        power.set(sr, 3.8f + 10.3f * driveVol + 1.5f * masterDriveElectrical
-                       + 2.5f * driven + 6.2f * cranked
-                       + 11.0f * breakupShoulder,
-                       -7.5f, 0.30f, 38.0f, 19000.0f);
+        power.set(sr, 2.4f + 11.7f * driveVol + 1.5f * masterDriveElectrical
+                       + 3.8f * driven + 6.2f * cranked
+                       + 15.0f * breakupShoulder + 5.2f * midWindow,
+                       -7.5f, 0.16f, 38.0f, 19000.0f);   // sag 0.16: crest medido vs A2 (0.30 aplastaba 2-3.8 dB)
         power.out   = 0.0085f;                                     // scale plate-volt differential to signal
         outLevel = 0.72f;
         // Output transformer is always part of the amp. The speaker block is a
         // bypassable fallback for auditioning the VST without an external cabinet/IR.
         outputTransformer.set(sr, activePanelVol);
+        // Voz contra CARGA REACTIVA, medida sim-vs-A2 (LTAS 1/6 oct):
+        //  - resonancia OT+carga ~108 Hz (faltaban -4 dB en 95-135)
+        //  - cuerpo 580 Hz ancho (el scoop quedaba -5..-7.7 dB vs el amp real)
+        //  - chime 2.1k -2.2 dB (+2..+2.9 de exceso)
+        loadBassRes.peaking(sr, 100.0f, 0.85f, 5.0f);   // resonancia OT+carga (el swap del nodo low dejo -2 dB de sub en noon)
+        loadMidBody.peaking(sr, 580.0f, 0.55f, 3.8f * tbGate);   // solo TB: el Normal ya calzaba con la A2
+        loadUpperTrim.peaking(sr, 1600.0f, 0.70f, -1.6f * tbGate);
+        loadNormalAir.highShelf(sr, 4200.0f, 2.6f * nGate);   // el Normal real cargado conserva mas aire (medido vs A2)
         fallbackSpeaker.set(sr, treble, cut, driveVol);
         lfoInc = (3.0f + 8.0f * pSpeed) / sr;                      // tremolo 3..11 Hz
     }
@@ -391,9 +431,10 @@ struct BoxDC30Core {
 
         float normal = normalV1.process(normalMiller.process(input) * 1.55f * bplus.preamp);
         const float normalDrive = 0.50f + 3.0f *
-            (0.35f * std::sqrt(pNVol) + 0.65f * normalElectrical)
+            (0.22f * std::sqrt(pNVol) + 0.13f * pNVol + 0.65f * normalElectrical)
             - 0.50f * pNVol * pNVol
-            + 0.85f * (4.0f * pNVol * (1.0f - pNVol));
+            + 0.85f * (4.0f * pNVol * (1.0f - pNVol))
+            + 0.90f * pNVol * pNVol * pNVol * pNVol;   // V10 real distorsiona mas (medido vs A2)
         normal = normalVolumeCouple.process(normal, normalDrive);
 
         float top = topV1.process(topMiller.process(bright.process(input)) * 2.40f * bplus.preamp);
@@ -401,7 +442,7 @@ struct BoxDC30Core {
         // This downstream grid-drive calibration represents the fixed V1 plate
         // gain and cathode-follower transfer. It rises monotonically: Ruby is
         // already near breakup by noon, then adds density through the last half.
-        const float topGridDrive = 2.0f + 5.8f * std::sqrt(pTBVol);
+        const float topGridDrive = 1.5f + 6.3f * std::sqrt(pTBVol);
         top = topVolumeCouple.process(top, topGridDrive);
         top = topFollower.process(top);
         top = tonestack.process(top);
@@ -426,6 +467,7 @@ struct BoxDC30Core {
         x = power.process(x * masterElectrical * bplus.power * bplus.screen);
         lastPowerLoad = std::fabs(x) * (0.55f + 0.95f * masterElectrical);
         x = outputTransformer.process(x);
+        x = loadBassRes.process(loadMidBody.process(loadUpperTrim.process(loadNormalAir.process(x))));
         const float cab = fallbackSpeaker.process(x);
         x += pCabSim * (0.65f * cab - x);
         if (pDepth > 0.0f){                                        // tremolo (amplitude)

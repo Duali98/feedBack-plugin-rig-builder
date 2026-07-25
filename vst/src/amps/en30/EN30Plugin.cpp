@@ -126,10 +126,14 @@ protected:
             float ub[kOS];
             os.upsample(3.2f * in0[i], ub);
             for (int k = 0; k < kOS; ++k)                  // core + Top-Boost scoop + soft-clip at 4x
-                ub[k] = rbAmpLvl(0.89f * scoop.process(core.process(ub[k])));
+                // 0.42 (antes 0.89): con 0.89 el pre-makeup llegaba a +0.4 dBFS y
+                // rbAmpLvl (rodilla 0.90) LIMITABA permanentemente los picos a V8+
+                // (~1.3 dB de crest + distorsion espuria, medido vs la grilla A2).
+                // El x2.119 del makeup de abajo compensa: lineal identico, headroom +6.5 dB.
+                ub[k] = rbAmpLvl(0.42f * scoop.process(core.process(ub[k])));
             // Level trim is strictly linear and AFTER every nonlinear block,
             // including rbAmpLvl, so flattening Volume cannot alter distortion.
-            const float y = os.downsample(ub) * makeup;
+            const float y = os.downsample(ub) * (makeup * 2.119f);
             outL[i] = y;
             outR[i] = y;   // dual-mono: one core, same signal both sides = centered/balanced
         }
