@@ -6194,7 +6194,7 @@
       c.fillStyle='rgba(255,246,210,0.28)'; c.fillRect(px,py+2.5*s,pw,1.5*s);
       c.restore();
       rr(c,px,py,pw,ph,4*s); c.strokeStyle=rgb(96,74,34); c.lineWidth=1.2*s; c.stroke();
-      const cyP=py+ph*.50, topY=py+ph*.11, botY=py+ph*.885, ky=.835*H;
+      const cyP=py+ph*.50, topY=py+ph*.10, botY=py+ph*.925, ky=.835*H;
       // ── rockers POWER (rojo) / STANDBY (negro) con marcas 0 / I ──
       const rocker=(x,red)=>{
         rr(c,x-19*s,cyP-26*s,38*s,52*s,5*s); c.fillStyle=rgb(14,12,10); c.fill();
@@ -6214,10 +6214,10 @@
           c.fillStyle='rgba(255,255,255,0.16)'; c.fillRect(x-11*s,cyP-17*s,22*s,4.5*s);
           c.fillStyle='rgba(0,0,0,0.45)'; c.fillRect(x-11*s,cyP+12*s,22*s,4.5*s); } };
       rocker(.117*W,true); rocker(.170*W,false);
-      textSpaced(d,.117*W,topY,F.barlow,7,inkF,'0',0.02); textSpaced(d,.170*W,topY,F.barlow,7,inkF,'0',0.02);
-      textSpaced(d,.117*W,py+ph*.80,F.barlow,7,inkF,'I',0.02); textSpaced(d,.170*W,py+ph*.80,F.barlow,7,inkF,'I',0.02);
-      textSpaced(d,.117*W,py+ph*.92,F.barlow,7.5,ink,'POWER',0.03);
-      textSpaced(d,.170*W,py+ph*.92,F.barlow,7.5,ink,'STANDBY',0.02);
+      textSpaced(d,.117*W,topY,F.barlow,7.5,inkF,'0',0.02); textSpaced(d,.170*W,topY,F.barlow,7.5,inkF,'0',0.02);
+      textSpaced(d,.117*W,py+ph*.80,F.barlow,7.5,inkF,'I',0.02); textSpaced(d,.170*W,py+ph*.80,F.barlow,7.5,inkF,'I',0.02);
+      textSpaced(d,.117*W,py+ph*.92,F.barlow,8.5,ink,'POWER',0.03);
+      textSpaced(d,.170*W,py+ph*.92,F.barlow,8.5,ink,'STANDBY',0.02);
       // bloque JCM 800 / LEAD SERIES (grande)
       c.save(); c.textAlign='left'; c.textBaseline='middle';
       c.font=`italic 800 ${Math.round(25*s)}px ${F.barlow}`; c.fillStyle=rgb(24,18,10);
@@ -6227,25 +6227,25 @@
       // ── abanicos 0-10 + labels ──
       const KR=.0150*W;
       const fan=(kx)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
-        c.font=`700 ${Math.round(8.0*s)}px ${F.barlow}`; c.fillStyle=ink;
+        c.font=`700 ${Math.round(8.8*s)}px ${F.barlow}`; c.fillStyle=ink;
         for(let n=0;n<=10;n+=2){ const aa=ang(n/10); const rr2=KR*1.52;
           c.fillText(String(n), kx*W+rr2*Math.cos(aa), ky+rr2*Math.sin(aa)); }
         c.restore(); };
       [.400,.460,.520,.580,.640,.700].forEach(fan);
-      textSpaced(d,.400*W,topY,F.barlow,7.5,ink,'PRESENCE',0.02);
-      textSpaced(d,.460*W,topY,F.barlow,7.5,ink,'BASS',0.03);
-      textSpaced(d,.520*W,topY,F.barlow,7.5,ink,'MIDDLE',0.02);
-      textSpaced(d,.580*W,topY,F.barlow,7.5,ink,'TREBLE',0.02);
-      textSpaced(d,.640*W,topY,F.barlow,7.5,ink,'MASTER',0.02);
-      textSpaced(d,.700*W,topY,F.barlow,7.5,ink,'PRE-AMP',0.02);
-      textSpaced(d,.640*W,botY,F.barlow,7.5,ink,'VOLUME',0.02);
-      textSpaced(d,.700*W,botY,F.barlow,7.5,ink,'VOLUME',0.02);
+      textSpaced(d,.400*W,topY,F.barlow,8.5,ink,'PRESENCE',0.02);
+      textSpaced(d,.460*W,topY,F.barlow,8.5,ink,'BASS',0.03);
+      textSpaced(d,.520*W,topY,F.barlow,8.5,ink,'MIDDLE',0.02);
+      textSpaced(d,.580*W,topY,F.barlow,8.5,ink,'TREBLE',0.02);
+      textSpaced(d,.640*W,topY,F.barlow,8.5,ink,'MASTER',0.02);
+      textSpaced(d,.700*W,topY,F.barlow,8.5,ink,'PRE-AMP',0.02);
+      textSpaced(d,.640*W,botY,F.barlow,8.5,ink,'VOLUME',0.02);
+      textSpaced(d,.700*W,botY,F.barlow,8.5,ink,'VOLUME',0.02);
       // ── UN jack HIGH SENSITIVITY con cable ──
       const jx=.790*W;
       c.beginPath(); c.arc(jx,ky,9*s,0,7); c.fillStyle=rgb(12,11,11); c.fill();
       c.strokeStyle=rgb(40,34,26); c.lineWidth=2.6*s; c.stroke();
       c.beginPath(); c.arc(jx,ky,3*s,0,7); c.fillStyle=rgb(50,48,44); c.fill();
-      textSpaced(d,jx,botY,F.barlow,7,ink,'HIGH SENSITIVITY',0.02);
+      textSpaced(d,jx,botY,F.barlow,8,ink,'HIGH SENSITIVITY',0.02);
       rr(c,jx-5*s,ky-6*s,10*s,7*s,2*s); c.fillStyle=rgb(36,34,32); c.fill();
       const cg=c.createLinearGradient(jx-5*s,ky,jx+5*s,ky); cg.addColorStop(0,rgb(188,192,198)); cg.addColorStop(0.5,rgb(120,124,130)); cg.addColorStop(1,rgb(188,192,198));
       rr(c,jx-5*s,ky+1*s,10*s,4*s,1.5*s); c.fillStyle=cg; c.fill();
@@ -7220,75 +7220,64 @@
         c.strokeStyle=rgb(150,153,158); c.lineWidth=1.9*s; c.stroke();
         c.beginPath(); c.arc(jx2,jy2,2.5*s,0,7); c.fillStyle=rgb(52,52,56); c.fill(); };
       jack(.090*W,ky+5*s); jack(.120*W,ky+5*s);
-      textSpaced(d,.105*W,topY,F.barlow,7.5,ink,'INPUT',0.05);
+      textSpaced(d,.105*W,topY,F.barlow,8.5,ink,'INPUT',0.05);
       c.strokeStyle='rgba(230,231,234,0.55)'; c.lineWidth=1*s;
       c.beginPath(); c.moveTo(.082*W,topY+7*s); c.lineTo(.082*W,topY+12*s); c.lineTo(.128*W,topY+12*s); c.lineTo(.128*W,topY+7*s); c.stroke();
-      textSpaced(d,.090*W,botY,F.barlow,6.5,inkF,'HIGH',0.02);
-      textSpaced(d,.120*W,botY,F.barlow,6.5,inkF,'LOW',0.02);
+      textSpaced(d,.090*W,botY,F.barlow,7.5,inkF,'HIGH',0.02);
+      textSpaced(d,.120*W,botY,F.barlow,7.5,inkF,'LOW',0.02);
       // labels + numeros (GRANDES)
       const KR=.0155*W;
       const fan=(kx,offLbl)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
-        c.font=`700 ${Math.round(8.2*s)}px ${F.barlow}`; c.fillStyle=inkD;
+        c.font=`700 ${Math.round(9.0*s)}px ${F.barlow}`; c.fillStyle=inkD;
         for(let n=0;n<=10;n+=5){ const aa=ang(n/10); const rr2=KR*1.55;
           c.fillText(n===0&&offLbl?offLbl:String(n), kx*W+rr2*Math.cos(aa), ky+rr2*Math.sin(aa)); }
         c.restore(); };
       fan(.168,'OFF'); fan(.220); fan(.272); fan(.324); fan(.376); fan(.438); fan(.512); fan(.564);
-      textSpaced(d,.168*W,topY,F.barlow,7,inkD,'DISTORTION',0.01);
-      textSpaced(d,.220*W,topY,F.barlow,7,inkD,'VOLUME',0.02);
-      textSpaced(d,.272*W,topY,F.barlow,7,inkD,'HI-TREBLE',0.01);
-      textSpaced(d,.324*W,topY,F.barlow,7,inkD,'MIDDLE',0.02);
-      textSpaced(d,.376*W,topY,F.barlow,7,inkD,'BASS',0.02);
-      textSpaced(d,.438*W,topY,F.barlow,7,inkD,'REVERB',0.02);
-      textSpaced(d,.512*W,topY,F.barlow,7,inkD,'RATE',0.02);
-      textSpaced(d,.564*W,topY,F.barlow,7,inkD,'DEPTH',0.02);
+      textSpaced(d,.168*W,topY,F.barlow,8,inkD,'DISTORTION',0.01);
+      textSpaced(d,.220*W,topY,F.barlow,8,inkD,'VOLUME',0.02);
+      textSpaced(d,.272*W,topY,F.barlow,8,inkD,'HI-TREBLE',0.01);
+      textSpaced(d,.324*W,topY,F.barlow,8,inkD,'MIDDLE',0.02);
+      textSpaced(d,.376*W,topY,F.barlow,8,inkD,'BASS',0.02);
+      textSpaced(d,.438*W,topY,F.barlow,8,inkD,'REVERB',0.02);
+      textSpaced(d,.512*W,topY,F.barlow,8,inkD,'RATE',0.02);
+      textSpaced(d,.564*W,topY,F.barlow,8,inkD,'DEPTH',0.02);
       c.strokeStyle='rgba(22,25,25,0.55)'; c.lineWidth=1*s;
       c.beginPath(); c.moveTo(.272*W-14*s,py+ph*.045+4*s); c.lineTo(.272*W-14*s,py+ph*.045);
       c.lineTo(.376*W+14*s,py+ph*.045); c.lineTo(.376*W+14*s,py+ph*.045+4*s); c.stroke();
-      textSpaced(d,.324*W,py+ph*.05,F.barlow,6,inkDF,'EQUALIZER',0.05);
+      textSpaced(d,.324*W,py+ph*.05,F.barlow,7,inkDF,'EQUALIZER',0.05);
       // palanca CHORUS
-      textSpaced(d,.612*W,topY,F.barlow,7,inkD,'CHORUS',0.02);
-      textSpaced(d,.6315*W,ky-14*s,F.barlow,6,inkDF,'VIB',0.02);
-      textSpaced(d,.6315*W,ky,F.barlow,6,inkDF,'OFF',0.02);
-      textSpaced(d,.6315*W,ky+14*s,F.barlow,6,inkDF,'ON',0.02);
-      // badge + piloto + Ronald + POWER
-      rr(c,.652*W,py+ph*.10,W*.135,ph*.36,3*s); c.fillStyle=rgb(9,9,10); c.fill();
-      c.strokeStyle=rgb(205,207,212); c.lineWidth=1.4*s; c.stroke();
+      textSpaced(d,.612*W,topY,F.barlow,8,inkD,'CHORUS',0.02);
+      textSpaced(d,.6315*W,ky-14*s,F.barlow,7,inkDF,'VIB',0.02);
+      textSpaced(d,.6315*W,ky,F.barlow,7,inkDF,'OFF',0.02);
+      textSpaced(d,.6315*W,ky+14*s,F.barlow,7,inkDF,'ON',0.02);
+      // badge + piloto + Ronald + POWER (llenando la seccion derecha)
+      rr(c,.652*W,py+ph*.09,W*.278,ph*.38,3*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle=rgb(205,207,212); c.lineWidth=1.5*s; c.stroke();
       c.save(); c.textAlign='center'; c.textBaseline='middle';
-      c.font=`italic 800 ${Math.round(11*s)}px ${F.barlow}`; c.fillStyle=rgb(242,243,246);
-      c.fillText('JAZZ CHORUS-120H', .7195*W, py+ph*.28); c.restore();
-      const ry=py+ph*.68;
-      rr(c,.652*W,ry-11*s,22*s,22*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
-      c.strokeStyle='rgba(200,202,208,0.5)'; c.lineWidth=0.9*s; c.stroke();
-      const plx=.652*W+11*s, ply=ry;
-      c.save(); c.globalAlpha=0.5; c.beginPath(); c.arc(plx,ply,10*s,0,7);
-      const gl=c.createRadialGradient(plx,ply,1.5*s,plx,ply,10*s); gl.addColorStop(0,'rgba(255,80,55,0.95)'); gl.addColorStop(1,'rgba(255,80,55,0)');
+      c.font=`italic 800 ${Math.round(13*s)}px ${F.barlow}`; c.fillStyle=rgb(242,243,246);
+      c.fillText('JAZZ CHORUS-120H', .791*W, py+ph*.28); c.restore();
+      const ry=py+ph*.70;
+      // piloto rojo en su cuadradito
+      rr(c,.652*W,ry-13*s,26*s,26*s,2.5*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle='rgba(200,202,208,0.5)'; c.lineWidth=1*s; c.stroke();
+      const plx=.652*W+13*s, ply=ry;
+      c.save(); c.globalAlpha=0.5; c.beginPath(); c.arc(plx,ply,12*s,0,7);
+      const gl=c.createRadialGradient(plx,ply,2*s,plx,ply,12*s); gl.addColorStop(0,'rgba(255,80,55,0.95)'); gl.addColorStop(1,'rgba(255,80,55,0)');
       c.fillStyle=gl; c.fill(); c.restore();
-      c.beginPath(); c.arc(plx,ply,4*s,0,7);
-      const pr=c.createRadialGradient(plx-1*s,ply-1.3*s,0.5*s,plx,ply,4*s);
+      c.beginPath(); c.arc(plx,ply,5*s,0,7);
+      const pr=c.createRadialGradient(plx-1.2*s,ply-1.6*s,0.6*s,plx,ply,5*s);
       pr.addColorStop(0,rgb(255,150,120)); pr.addColorStop(.5,rgb(224,46,30)); pr.addColorStop(1,rgb(124,14,10));
       c.fillStyle=pr; c.fill();
-      rr(c,.675*W,ry-11*s,34*s,22*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
-      c.strokeStyle=rgb(160,162,168); c.lineWidth=0.9*s; c.stroke();
-      // monograma chico en el bloque
-      const monoR=(mx,my,mu,lw,col)=>{ c.save(); c.lineCap='round'; c.lineJoin='round';
-        c.strokeStyle=col; c.lineWidth=lw;
-        c.beginPath();
-        c.moveTo(mx+14*mu,my+92*mu); c.lineTo(mx+14*mu,my+26*mu);
-        c.quadraticCurveTo(mx+14*mu,my+12*mu,mx+28*mu,my+12*mu);
-        c.lineTo(mx+72*mu,my+12*mu);
-        c.quadraticCurveTo(mx+88*mu,my+12*mu,mx+88*mu,my+28*mu);
-        c.lineTo(mx+88*mu,my+40*mu);
-        c.quadraticCurveTo(mx+88*mu,my+56*mu,mx+72*mu,my+56*mu);
-        c.lineTo(mx+38*mu,my+56*mu);
-        c.stroke();
-        c.beginPath(); c.moveTo(mx+56*mu,my+62*mu); c.lineTo(mx+86*mu,my+92*mu); c.stroke();
-        c.restore(); };
-      monoR(.6785*W, ry-9*s, 0.17*s, 2*s, rgb(238,240,244));
-      textSpaced(d,.699*W,ry+1*s,F.barlow,6,ink,'Ronald',0.01);
-      batToggle(d,.735*W,ry,8*s,true);
-      textSpaced(d,.760*W,ry-8*s,F.barlow,5.5,inkF,'ON',0.02);
-      textSpaced(d,.760*W,ry+9*s,F.barlow,5.5,inkF,'OFF',0.02);
-      textSpaced(d,.735*W,botY,F.barlow,6.5,ink,'POWER',0.02);
+      // bloque Ronald: monograma a la izquierda + nombre a la derecha (sin solape)
+      rr(c,.678*W,ry-13*s,W*.062,26*s,2.5*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle=rgb(160,162,168); c.lineWidth=1*s; c.stroke();
+      monoR(.6815*W, ry-10*s, 0.20*s, 2.2*s, rgb(238,240,244));
+      textSpaced(d,.678*W+W*.062*.63,ry,F.barlow,7,ink,'Ronald',0.01);
+      // POWER
+      batToggle(d,.874*W,ry,9*s,true);
+      textSpaced(d,.902*W,ry-9*s,F.barlow,6.5,inkF,'ON',0.02);
+      textSpaced(d,.902*W,ry+10*s,F.barlow,6.5,inkF,'OFF',0.02);
+      textSpaced(d,.874*W,py+ph*.28,F.barlow,8,ink,'POWER',0.03);
       // ── tiras de ALUMINIO + rejilla hasta abajo (como el real) ──
       const gx=W*.062, gw=W*.876;
       const strip=(yy)=>{ rr(c,gx,yy,gw,H*.020,4*s);
