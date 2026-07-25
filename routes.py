@@ -1751,6 +1751,23 @@ def _read_nam_loudness(file_path: Path) -> float | None:
     except OSError:
         return None
     import re as _re
+    # Contenedores A2 (SlimmableContainer): los submodelos van INLINE con su
+    # propia metadata, así que el primer "loudness" del head es el del tier
+    # SLIM (~2 dB distinto del que suena). La metadata del CONTENEDOR va al
+    # final del archivo → leer la cola y tomar el ÚLTIMO match. Los .nam
+    # clásicos no entran a esta rama (metadata al inicio, un solo match).
+    if '"SlimmableContainer"' in head:
+        try:
+            with open(file_path, "rb") as fp:
+                fp.seek(0, 2)
+                size = fp.tell()
+                fp.seek(max(0, size - 4096))
+                tail = fp.read().decode("utf-8", errors="ignore")
+            tm = _re.findall(r'"loudness"\s*:\s*(-?\d+(?:\.\d+)?)', tail)
+            if tm:
+                return float(tm[-1])
+        except (OSError, ValueError):
+            pass
     m = _re.search(r'"loudness"\s*:\s*(-?\d+(?:\.\d+)?)', head)
     if not m:
         return None
@@ -2017,6 +2034,75 @@ def _build_default_captures() -> dict:
             model_id = int(m.group(1))
         out[gear] = {"tone3000_id": int(t3kid), "kind": kind, "model_id": model_id}
     return out
+
+
+# ── A2 capture grids — packs NAM A2 indexados como grilla por amp ─────────
+# data/a2_capture_grids.json (tools/build_a2_grid_index.py) mapea un pack de
+# capturas amp-only del MISMO amp (p.ej. VOX AC30 CH, 96 capturas barriendo
+# canal/Volume/ToneCut/Bass/Treble) a coordenadas de grilla. El pick por tono
+# elige la captura más cercana a las perillas RS → el amp suena por captura A2
+# ("idéntico al amp real") y el cab IR sigue siendo el nuestro. SNAP-only: la
+# cadena de playback es serial (sin mezcla paralela), así que no hay blend de
+# dos capturas aquí; el morph gradual de perillas vive en el A2 player VST
+# (fase 2). Los .nam NO se redistribuyen (licencia T3K): si el pack no está
+# instalado en <config>/nam_models/amps/<subdir>/, el pick devuelve None y el
+# amp cae al VST bundled como siempre.
+
+
+def _load_a2_grids() -> dict:
+    return _load_cached_json("a2_capture_grids.json", post=_strip_meta_keys)
+
+
+def _pick_a2_grid_capture(rs_gear: str, knobs: dict | None,
+                          rs_gain: float | None = None) -> dict | None:
+    """Elige la captura A2 más cercana a las perillas RS de un tono.
+
+    `knobs` es el dict RS 0-100 del piece ({"Gain": 63, "Treble": 71, ...});
+    cuando falta (resoluciones genéricas sin tono) se usa `rs_gain` para el
+    eje V y noon para el resto. Devuelve {"file": "amps/<subdir>/<name>.nam"}
+    o None (sin grilla para el gear / pack no instalado)."""
+    entry = (_load_a2_grids() or {}).get(rs_gear)
+    if not entry or _config_dir is None:
+        return None
+    subdir = f"amps/{entry.get('library_subdir') or ''}".rstrip("/")
+    root = _config_dir / "nam_models" / subdir
+    knob_map = entry.get("knob_map") or {}
+    weights = entry.get("axis_weights") or {}
+    knobs = knobs or {}
+
+    def _knob(name: str, default: float = 50.0) -> float:
+        try:
+            v = knobs.get(name)
+            return float(v) if v is not None else default
+        except (TypeError, ValueError):
+            return default
+
+    # Perillas RS (0-100) → ejes de grilla (0-10).
+    want: dict[str, float] = {}
+    for axis, knob_name in knob_map.items():
+        if axis == "v" and not knobs:
+            want["v"] = (rs_gain if rs_gain is not None else 50.0) / 10.0
+        elif axis.endswith("_inv"):
+            want[axis[:-4]] = (100.0 - _knob(knob_name)) / 10.0
+        else:
+            want[axis] = _knob(knob_name) / 10.0
+
+    chan = entry.get("channel_default") or "TB"
+    best, best_d = None, None
+    for cap in entry.get("captures") or []:
+        if cap.get("boost") or (cap.get("ch") or "").upper() != chan:
+            continue
+        d = 0.0
+        for axis, target in want.items():
+            if axis in cap:
+                d += float(weights.get(axis, 1.0)) * abs(float(cap[axis]) - target)
+        if best_d is None or d < best_d:
+            best, best_d = cap, d
+    if not best:
+        return None
+    if not (root / best["file"]).exists():
+        return None                      # pack no instalado → cae al VST
+    return {"file": f"{subdir}/{best['file']}"}
 
 
 # ── VST seed catalog + RS-knob translation table (Fase E + knob mapping) ──
@@ -5725,6 +5811,19 @@ def _resolve_gear_assignment(rs_gear: str, level: str | None,
                     "vst_path": None, "vst_format": None, "vst_state": None}
         return None
 
+    # ── Grilla de capturas A2 (gana sobre el VST bundled) ──────
+    # Resolución genérica sin tono: solo tenemos rs_gain → eje V; el
+    # resto de ejes quedan en noon. Con pack instalado el amp resuelve
+    # a la captura más cercana; sin pack cae al VST como siempre.
+    if category == "amp":
+        _a2 = _pick_a2_grid_capture(rs_gear, None, rs_gain=rs_gain)
+        if _a2:
+            return {"kind": "nam",
+                    "file": _a2["file"],
+                    "tone3000_id": None,
+                    "vst_path": None, "vst_format": None,
+                    "vst_state": None}
+
     # ── Amp bundled-VST preference (amps-vst branch) ───────────
     # An amp that ships an installed bundled VST (rs_gear_to_vst.json) plays
     # that VST instead of a NAM capture — the whole point of shipping amp
@@ -7129,6 +7228,25 @@ def _batch_worker(mode: str = "all", categories=None):
                         })
                         continue
 
+                    # 0.4. Grilla de capturas A2 (data/a2_capture_grids.json):
+                    # con el pack instalado, el amp toca la CAPTURA más
+                    # cercana a las perillas RS de este tono (amp-only; el
+                    # cab IR sigue siendo el nuestro) en vez del VST bundled.
+                    if category == "amp":
+                        _a2 = _pick_a2_grid_capture(rs_type, piece.get("knobs"))
+                        if _a2:
+                            pieces.append({
+                                "slot": piece["slot"],
+                                "rs_gear_type": rs_type,
+                                "kind": "nam",
+                                "file": _a2["file"],
+                                "params": piece["knobs"],
+                                "tone3000_id": None,
+                                "assigned_mode": "auto",
+                                "bypassed": existing_by_gear.get(rs_type, {}).get("bypassed", False),
+                            })
+                            continue
+
                     # 0.5. Promote to primary VST when one is installed.
                     # rs_gear_to_vst.json holds a curator-ranked list of
                     # VST/AU recommendations per gear (first = primary).
@@ -7525,6 +7643,23 @@ def _auto_download_for_song(filename: str, path: Path) -> dict:
                 if category == "amp":
                     amp_variant = _pick_amp_gain_variant(info, _gear_rs_gain(piece, info))
                 cache_key = (rs_type, amp_variant["tone3000_id"]) if amp_variant else rs_type
+
+                # Grilla de capturas A2 — mismo orden que el batch worker
+                # (manual no aplica aquí; A2 va ANTES del VST primario).
+                if category == "amp":
+                    _a2 = _pick_a2_grid_capture(rs_type, piece.get("knobs"))
+                    if _a2:
+                        pieces.append({
+                            "slot": piece["slot"],
+                            "rs_gear_type": rs_type,
+                            "kind": "nam",
+                            "file": _a2["file"],
+                            "params": piece["knobs"],
+                            "tone3000_id": None,
+                            "assigned_mode": "auto",
+                        })
+                        counts["processed"] += 1
+                        continue
 
                 # Promote to the installed primary VST (rs_gear_to_vst.json)
                 # BEFORE the existing-assignment reuse below — mirrors the

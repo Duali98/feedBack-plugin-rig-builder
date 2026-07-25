@@ -1,0 +1,752 @@
+{
+ "_meta": "A2 capture grids — packs de capturas NAM A2 (TONE3000) indexados como grilla por amp. El picker (_pick_a2_grid_capture) elige por tono la captura más cercana a las perillas RS; snap-only (la cadena de playback es serial — el morph gradual vive en el A2 player VST, fase 2). Los .nam NO se redistribuyen (licencia T3K): cada usuario instala el pack con tools/build_a2_grid_index.py --install.",
+ "Amp_EN30": {
+  "pack_name": "VOX AC30 CH [Hyper Accuracy+]",
+  "library_subdir": "a2_vox_ac30",
+  "channel_default": "TB",
+  "knob_map": {
+   "v": "Gain",
+   "t": "Treble",
+   "b": "Bass",
+   "tc_inv": "Pres"
+  },
+  "axis_weights": {
+   "v": 3.0,
+   "t": 1.5,
+   "b": 1.5,
+   "tc": 0.75
+  },
+  "captures": [
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V10_TC0_DALLASTREBLE_4_S.nam",
+    "ch": "N",
+    "v": 10,
+    "tc": 0,
+    "boost": true
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V10_TC0_DALLASTREBLE_6_S.nam",
+    "ch": "N",
+    "v": 10,
+    "tc": 0,
+    "boost": true
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V10_TC0_DALLASTREBLE_8_S.nam",
+    "ch": "N",
+    "v": 10,
+    "tc": 0,
+    "boost": true
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V10_TC0_S.nam",
+    "ch": "N",
+    "v": 10,
+    "tc": 0
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V10_TC3_S.nam",
+    "ch": "N",
+    "v": 10,
+    "tc": 3
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V3_TC0_S.nam",
+    "ch": "N",
+    "v": 3,
+    "tc": 0
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V3_TC10_S.nam",
+    "ch": "N",
+    "v": 3,
+    "tc": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V3_TC3_S.nam",
+    "ch": "N",
+    "v": 3,
+    "tc": 3
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V3_TC5_S.nam",
+    "ch": "N",
+    "v": 3,
+    "tc": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V3_TC8_S.nam",
+    "ch": "N",
+    "v": 3,
+    "tc": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V5_TC0_S.nam",
+    "ch": "N",
+    "v": 5,
+    "tc": 0
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V5_TC10_S.nam",
+    "ch": "N",
+    "v": 5,
+    "tc": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V5_TC3_S.nam",
+    "ch": "N",
+    "v": 5,
+    "tc": 3
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V5_TC5_S.nam",
+    "ch": "N",
+    "v": 5,
+    "tc": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V5_TC8_S.nam",
+    "ch": "N",
+    "v": 5,
+    "tc": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V7_TC0_DALLASTREBLE_7_S.nam",
+    "ch": "N",
+    "v": 7,
+    "tc": 0,
+    "boost": true
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V8_TC0_S.nam",
+    "ch": "N",
+    "v": 8,
+    "tc": 0
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V8_TC10_S.nam",
+    "ch": "N",
+    "v": 8,
+    "tc": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V8_TC3_S.nam",
+    "ch": "N",
+    "v": 8,
+    "tc": 3
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V8_TC5_S.nam",
+    "ch": "N",
+    "v": 8,
+    "tc": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_N_V8_TC8_S.nam",
+    "ch": "N",
+    "v": 8,
+    "tc": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V10_TC0_B10_T10_FULLCRANK_S.nam",
+    "ch": "TB",
+    "v": 10,
+    "tc": 0,
+    "b": 10,
+    "t": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V10_TC0_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 10,
+    "tc": 0,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V10_TC0_B5_T6_NOONISH_S.nam",
+    "ch": "TB",
+    "v": 10,
+    "tc": 0,
+    "b": 5,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V10_TC6_B10_T10_FULLCRANK_S.nam",
+    "ch": "TB",
+    "v": 10,
+    "tc": 6,
+    "b": 10,
+    "t": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V10_TC6_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 10,
+    "tc": 6,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V10_TC7_B5_T6_NOONISH_S.nam",
+    "ch": "TB",
+    "v": 10,
+    "tc": 7,
+    "b": 5,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V2_TC0_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 2,
+    "tc": 0,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V2_TC10_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 2,
+    "tc": 10,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V2_TC3_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 2,
+    "tc": 3,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V2_TC5_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 2,
+    "tc": 5,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V2_TC8_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 2,
+    "tc": 8,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC0_B1_T5_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 0,
+    "b": 1,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC0_B4_T7_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 0,
+    "b": 4,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC0_B6_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 0,
+    "b": 6,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC0_B7_T7_PUSH_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 0,
+    "b": 7,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC4_B1_T5_STREETS_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 4,
+    "b": 1,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC4_B6_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 4,
+    "b": 6,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC5_B4_T7_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 5,
+    "b": 4,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC5_B7_T7_PUSH_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 5,
+    "b": 7,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC6_B1_T5_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 6,
+    "b": 1,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC7_B6_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 7,
+    "b": 6,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC8_B4_T7_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 8,
+    "b": 4,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V3_TC8_B7_T7_PUSH_S.nam",
+    "ch": "TB",
+    "v": 3,
+    "tc": 8,
+    "b": 7,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC0_B10_T10_CRANKED_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 0,
+    "b": 10,
+    "t": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC0_B1_T7_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 0,
+    "b": 1,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC0_B3_T8_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 0,
+    "b": 3,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC0_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 0,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC0_B7_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 0,
+    "b": 7,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC0_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 0,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC2_B0_T0_MIDS _S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 2,
+    "b": 0,
+    "t": 0
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC3_B7_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 3,
+    "b": 7,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC4_B1_T7_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 4,
+    "b": 1,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC4_B3_T8_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 4,
+    "b": 3,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC4_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 4,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC4_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 4,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC7_B1_T7_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 7,
+    "b": 1,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC7_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 7,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC7_B7_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 7,
+    "b": 7,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC7_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 7,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V5_TC8_B3_T8_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 5,
+    "tc": 8,
+    "b": 3,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC0_B10_T10_CRANKED_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 0,
+    "b": 10,
+    "t": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC0_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 0,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC0_B2_T7_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 0,
+    "b": 2,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC0_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 0,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC0_B7_T3_WARM_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 0,
+    "b": 7,
+    "t": 3
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC0_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 0,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC4_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 4,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC4_B2_T7_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 4,
+    "b": 2,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC4_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 4,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC5_B10_T10_CRANKED_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 5,
+    "b": 10,
+    "t": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC5_B7_T3_WARM_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 5,
+    "b": 7,
+    "t": 3
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC5_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 5,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC7_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 7,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC7_B2_T7_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 7,
+    "b": 2,
+    "t": 7
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC7_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 7,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC7_B7_T3_WARM_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 7,
+    "b": 7,
+    "t": 3
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V7_TC8_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 7,
+    "tc": 8,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC0_B10_T10_CRANKED_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 0,
+    "b": 10,
+    "t": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC0_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 0,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC0_B3_T8_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 0,
+    "b": 3,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC0_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 0,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC0_B7_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 0,
+    "b": 7,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC0_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 0,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC2_B0_T0_MIDS_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 2,
+    "b": 0,
+    "t": 0
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC4_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 4,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC4_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 4,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC5_B3_T8_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 5,
+    "b": 3,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC5_B7_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 5,
+    "b": 7,
+    "t": 4
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC5_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 5,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC7_B10_T10_CRANKED_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 7,
+    "b": 10,
+    "t": 10
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC7_B3_T8_BRIGHT_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 7,
+    "b": 3,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC7_B5_T5_NOON_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 7,
+    "b": 5,
+    "t": 5
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC7_B7_T8_PUSH_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 7,
+    "b": 7,
+    "t": 8
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC8_B1_T6_LOCUT_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 8,
+    "b": 1,
+    "t": 6
+   },
+   {
+    "file": "SLAMMIN_VOX_AC30_TB_V8_TC8_B7_T4_WARM_S.nam",
+    "ch": "TB",
+    "v": 8,
+    "tc": 8,
+    "b": 7,
+    "t": 4
+   }
+  ]
+ }
+}
