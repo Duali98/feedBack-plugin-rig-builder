@@ -593,25 +593,25 @@
       const lobes=10;
       c.beginPath();
       for(let i=0;i<=lobes*8;i++){ const t=i/(lobes*8)*Math.PI*2;
-        const rr2=R*(0.72-0.10*Math.pow((Math.cos(lobes*(t-a))+1)*0.5,1.4));
+        const rr2=R*(0.82-0.09*Math.pow((Math.cos(lobes*(t-a))+1)*0.5,1.4));
         const xx=cx+rr2*Math.cos(t), yy=cy+rr2*Math.sin(t);
         if(i)c.lineTo(xx,yy); else c.moveTo(xx,yy); }
       c.closePath();
       const bg2=c.createRadialGradient(cx-R*0.25,cy-R*0.3,R*0.06,cx,cy,R*0.75);
-      bg2.addColorStop(0,rgb(66,66,70)); bg2.addColorStop(.55,rgb(34,34,36)); bg2.addColorStop(1,rgb(12,12,13));
+      bg2.addColorStop(0,rgb(72,72,76)); bg2.addColorStop(.55,rgb(38,38,40)); bg2.addColorStop(1,rgb(14,14,15));
       c.fillStyle=bg2; c.fill();
       c.strokeStyle=rgb(5,5,6); c.lineWidth=0.9*s; c.stroke();
       // tapa de aluminio hilado
-      const tg=c.createRadialGradient(cx-R*0.20,cy-R*0.24,R*0.04,cx,cy,R*0.55);
-      tg.addColorStop(0,rgb(250,251,253)); tg.addColorStop(.55,rgb(210,213,217)); tg.addColorStop(1,rgb(150,153,158));
-      c.beginPath(); c.arc(cx,cy,R*0.50,0,7); c.fillStyle=tg; c.fill();
+      const tg=c.createRadialGradient(cx-R*0.24,cy-R*0.28,R*0.05,cx,cy,R*0.66);
+      tg.addColorStop(0,rgb(252,253,255)); tg.addColorStop(.5,rgb(216,219,223)); tg.addColorStop(1,rgb(160,163,168));
+      c.beginPath(); c.arc(cx,cy,R*0.62,0,7); c.fillStyle=tg; c.fill();
       c.strokeStyle=rgb(90,92,96); c.lineWidth=0.9*s; c.stroke();
-      for(let rr2=R*0.10; rr2<R*0.47; rr2+=R*0.07){
+      for(let rr2=R*0.12; rr2<R*0.58; rr2+=R*0.08){
         c.beginPath(); c.arc(cx,cy,rr2,0,7);
         c.strokeStyle='rgba(120,122,126,0.18)'; c.lineWidth=0.7*s; c.stroke(); }
       // destello radial
-      c.save(); c.beginPath(); c.arc(cx,cy,R*0.48,0,7); c.clip();
-      c.globalAlpha=0.35; c.beginPath(); c.moveTo(cx,cy); c.arc(cx,cy,R*0.50,-2.3,-1.8); c.closePath();
+      c.save(); c.beginPath(); c.arc(cx,cy,R*0.60,0,7); c.clip();
+      c.globalAlpha=0.35; c.beginPath(); c.moveTo(cx,cy); c.arc(cx,cy,R*0.62,-2.3,-1.8); c.closePath();
       c.fillStyle=rgb(255,255,255); c.fill(); c.restore();
       return;
     }
@@ -7211,11 +7211,11 @@
       // seccion principal GRIS AZUL-VERDOSA (DISTORTION..REVERB, como la foto)
       const gx0=W*.143, ox0=W*.472, ox1=W*.628;
       const bg3=c.createLinearGradient(0,py,0,py+ph);
-      bg3.addColorStop(0,rgb(178,187,185)); bg3.addColorStop(.5,rgb(156,166,164)); bg3.addColorStop(1,rgb(132,142,141));
+      bg3.addColorStop(0,rgb(122,132,128)); bg3.addColorStop(.5,rgb(104,114,111)); bg3.addColorStop(1,rgb(86,96,94));
       c.fillStyle=bg3; c.fillRect(gx0,py,ox0-gx0,ph);
       // seccion CHORUS tan-oliva amarillenta (rate/depth/palanca)
       const og=c.createLinearGradient(0,py,0,py+ph);
-      og.addColorStop(0,rgb(182,175,136)); og.addColorStop(.5,rgb(164,157,118)); og.addColorStop(1,rgb(138,132,96));
+      og.addColorStop(0,rgb(116,118,76)); og.addColorStop(.5,rgb(100,102,64)); og.addColorStop(1,rgb(82,84,52));
       c.fillStyle=og; c.fillRect(ox0,py,ox1-ox0,ph);
       c.strokeStyle='rgba(255,255,255,0.07)'; c.lineWidth=1;
       for(let yy=py+2*s; yy<py+ph; yy+=2.4*s){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
@@ -7259,32 +7259,36 @@
       textSpaced(d,.620*W,ky-13*s,F.barlow,5,inkDF,'VIB',0.02);
       textSpaced(d,.620*W,ky,F.barlow,5,inkDF,'OFF',0.02);
       textSpaced(d,.620*W,ky+13*s,F.barlow,5,inkDF,'ON',0.02);
-      // ── seccion derecha: badge + Ronald + piloto + POWER (compacta) ──
-      rr(c,.636*W,py+ph*.12,W*.150,ph*.40,3*s); c.fillStyle=rgb(9,9,10); c.fill();
-      c.strokeStyle=rgb(200,202,208); c.lineWidth=1.2*s; c.stroke();
+      // ── seccion derecha: badge arriba + fila piloto/Ronald/POWER (compacta) ──
+      rr(c,.636*W,py+ph*.12,W*.128,ph*.36,3*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle=rgb(205,207,212); c.lineWidth=1.4*s; c.stroke();
       c.save(); c.textAlign='center'; c.textBaseline='middle';
-      c.font=`italic 800 ${Math.round(10.5*s)}px ${F.barlow}`; c.fillStyle=rgb(242,243,246);
-      c.fillText('JAZZ CHORUS-120H', .711*W, py+ph*.325); c.restore();
-      rr(c,.636*W,py+ph*.58,W*.040,ph*.32,2.5*s); c.fillStyle=rgb(9,9,10); c.fill();
-      c.strokeStyle=rgb(150,152,158); c.lineWidth=0.9*s; c.stroke();
-      c.save(); c.textAlign='center'; c.textBaseline='middle';
-      c.font=`800 ${Math.round(7.5*s)}px ${F.bebas}`; c.fillStyle=rgb(236,238,242);
-      c.fillText('R2', .648*W, py+ph*.71); c.restore();
-      textSpaced(d,.668*W,py+ph*.74,F.barlow,4.5,ink,'Ronald',0.01);
-      // piloto rojo
-      const plx=.712*W, ply=py+ph*.74;
-      c.save(); c.globalAlpha=0.4; c.beginPath(); c.arc(plx,ply,10*s,0,7);
-      const gl=c.createRadialGradient(plx,ply,2*s,plx,ply,10*s); gl.addColorStop(0,'rgba(255,70,50,0.9)'); gl.addColorStop(1,'rgba(255,70,50,0)');
+      c.font=`italic 800 ${Math.round(9.5*s)}px ${F.barlow}`; c.fillStyle=rgb(242,243,246);
+      c.fillText('JAZZ CHORUS-120H', .700*W, py+ph*.30); c.restore();
+      const ry=py+ph*.70;
+      // piloto rojo en su cuadradito
+      rr(c,.636*W,ry-10*s,20*s,20*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle='rgba(200,202,208,0.5)'; c.lineWidth=0.9*s; c.stroke();
+      const plx=.636*W+10*s, ply=ry;
+      c.save(); c.globalAlpha=0.5; c.beginPath(); c.arc(plx,ply,9*s,0,7);
+      const gl=c.createRadialGradient(plx,ply,1.5*s,plx,ply,9*s); gl.addColorStop(0,'rgba(255,80,55,0.95)'); gl.addColorStop(1,'rgba(255,80,55,0)');
       c.fillStyle=gl; c.fill(); c.restore();
-      c.beginPath(); c.arc(plx,ply,4.5*s,0,7);
-      const pr=c.createRadialGradient(plx-1.2*s,ply-1.6*s,0.6*s,plx,ply,4.5*s);
-      pr.addColorStop(0,rgb(255,140,110)); pr.addColorStop(.5,rgb(222,44,30)); pr.addColorStop(1,rgb(120,14,10));
-      c.fillStyle=pr; c.fill(); c.strokeStyle=rgb(80,82,86); c.lineWidth=0.9*s; c.stroke();
+      c.beginPath(); c.arc(plx,ply,3.6*s,0,7);
+      const pr=c.createRadialGradient(plx-1*s,ply-1.3*s,0.5*s,plx,ply,3.6*s);
+      pr.addColorStop(0,rgb(255,150,120)); pr.addColorStop(.5,rgb(224,46,30)); pr.addColorStop(1,rgb(124,14,10));
+      c.fillStyle=pr; c.fill();
+      // bloque Ronald
+      rr(c,.6555*W,ry-10*s,30*s,20*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.strokeStyle=rgb(160,162,168); c.lineWidth=0.9*s; c.stroke();
+      c.save(); c.textAlign='center'; c.textBaseline='middle';
+      c.font=`800 ${Math.round(6.5*s)}px ${F.bebas}`; c.fillStyle=rgb(238,240,244);
+      c.fillText('R2', .6555*W+9*s, ry-2.5*s); c.restore();
+      textSpaced(d,.6555*W+18*s,ry+4.5*s,F.barlow,4,ink,'Ronald',0.01);
       // POWER
-      batToggle(d,.760*W,ky+2*s,8*s,true);
-      textSpaced(d,.760*W,topY,F.barlow,6,ink,'POWER',0.02);
-      textSpaced(d,.788*W,ky-8*s,F.barlow,5,inkF,'ON',0.02);
-      textSpaced(d,.788*W,ky+12*s,F.barlow,5,inkF,'OFF',0.02);
+      batToggle(d,.712*W,ry,7.5*s,true);
+      textSpaced(d,.735*W,ry-7*s,F.barlow,4.5,inkF,'ON',0.02);
+      textSpaced(d,.735*W,ry+8*s,F.barlow,4.5,inkF,'OFF',0.02);
+      textSpaced(d,.712*W,botY,F.barlow,5.5,ink,'POWER',0.02);
       // ── GRAN rejilla de cuadricula con marco de piping ──
       const gy=H*.345, gh=H*.545, gx=W*.062, gw=W*.876;
       rr(c,gx-6*s,gy-6*s,gw+12*s,gh+12*s,7*s); c.fillStyle=rgb(6,6,7); c.fill();
@@ -7295,7 +7299,7 @@
       rr(c,gx,gy,gw,gh,4*s); c.fillStyle=rgb(13,13,14); c.fill();
       c.save(); rr(c,gx,gy,gw,gh,4*s); c.clip();
       // cuadricula fina blanca (tela JC)
-      c.strokeStyle='rgba(235,230,214,0.34)'; c.lineWidth=1;
+      c.strokeStyle='rgba(214,202,164,0.30)'; c.lineWidth=1;
       for(let xx=gx;xx<gx+gw;xx+=6*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
       for(let yy=gy;yy<gy+gh;yy+=6*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
       c.strokeStyle='rgba(0,0,0,0.55)'; c.lineWidth=1.4*s;
@@ -7306,16 +7310,16 @@
       c.fillStyle=sheen; c.fillRect(gx,gy,gw,gh);
       c.restore();
       // placa Ronald grande (monograma + nombre, como la foto)
-      const bpx=gx+gw*.025, bpy=gy+gh*.16, bpw=W*.130, bph=gh*.68;
+      const bpx=gx+gw*.025, bpy=gy+gh*.24, bpw=W*.150, bph=gh*.52;
       rr(c,bpx,bpy,bpw,bph,5*s); c.fillStyle=rgb(8,8,9); c.fill();
       rr(c,bpx,bpy,bpw,bph,5*s); c.strokeStyle=rgb(215,217,222); c.lineWidth=2*s; c.stroke();
       rr(c,bpx+4*s,bpy+4*s,bpw-8*s,bph-8*s,3.5*s); c.strokeStyle='rgba(215,217,222,0.4)'; c.lineWidth=0.9*s; c.stroke();
       c.save(); c.textAlign='center'; c.textBaseline='middle';
       const bx=bpx+bpw/2;
-      c.font=`800 ${Math.round(44*s)}px ${F.bebas}`; c.fillStyle=rgb(240,242,246);
-      c.fillText('R2', bx, bpy+bph*.40);
-      c.font=`700 ${Math.round(17*s)}px ${F.barlow}`;
-      c.fillText('Ronald', bx, bpy+bph*.78); c.restore();
+      c.font=`800 ${Math.round(38*s)}px ${F.bebas}`; c.fillStyle=rgb(240,242,246);
+      c.fillText('R2', bx, bpy+bph*.38);
+      c.font=`700 ${Math.round(16*s)}px ${F.barlow}`;
+      c.fillText('Ronald', bx, bpy+bph*.80); c.restore();
       // ── tachas + esquineras envolventes ──
       const stud=(x,y)=>{ const g=c.createRadialGradient(x-1.5*s,y-1.5*s,0.5*s,x,y,4*s);
         g.addColorStop(0,rgb(150,132,104)); g.addColorStop(1,rgb(52,44,34));
