@@ -12,13 +12,15 @@
   #face canvas { width:100%; display:block; cursor:ns-resize; touch-action:none;
                  border-radius:10px; box-shadow:0 14px 40px rgba(0,0,0,.5); }
   .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
-  button, label.tgl { background:#242a38; color:#e8ecf5; border:1px solid #3a4358;
+  button, select { background:#242a38; color:#e8ecf5; border:1px solid #3a4358;
     border-radius:9px; padding:8px 16px; font-size:13.5px; cursor:pointer; }
   button.on { background:#2c4a86; border-color:#5f83c8; }
   input[type=range] { width:140px; }
   #status { font:12.5px ui-monospace, monospace; color:#9fb4d8; background:#1a1e28;
-            border:1px solid #2c3346; border-radius:9px; padding:8px 14px; min-width:520px; text-align:center; }
+            border:1px solid #2c3346; border-radius:9px; padding:8px 14px;
+            min-width:min(520px, 92vw); text-align:center; }
   #status b { color:#ffd27a; font-weight:600; }
+  #status.err { color:#ff9a8a; }
   .hint { color:#77809a; font-size:12px; max-width:760px; text-align:center; }
 </style>
 </head>
@@ -28,146 +30,198 @@
 <div class="row">
   <button id="btnDi">▶ DI loop</button>
   <button id="btnMic">🎸 Entrada en vivo</button>
+  <select id="inDev" title="Dispositivo de entrada"><option value="">entrada por defecto</option></select>
   <button id="btnCab" class="on">Cab 2x12 ON</button>
   <label>Vol <input id="vol" type="range" min="0" max="200" value="100"></label>
 </div>
-<div id="status">cargando…</div>
-<div class="hint">Mueve TB VOLUME / TREBLE / BASS / TONE CUT (o clickea el INPUT para cambiar de canal):
-el tester elige las 2 capturas vecinas de la grilla y las mezcla equal-power en paralelo —
-la transición es continua, no salta. NORMAL VOLUME maneja el eje V del canal Normal.</div>
+<div id="status">cargando la grilla…</div>
+<div class="hint">Aprieta ▶ DI loop (el navegador exige un clic para iniciar audio). Mueve
+TB VOLUME / TREBLE / BASS / TONE CUT, o clickea el INPUT para cambiar de canal: el tester
+mezcla las 2 capturas vecinas equal-power en paralelo — transición continua, sin saltos.
+Para tu guitarra: elige el ME-25 en el selector y usa audífonos. Si algo falla, prueba en Chrome.</div>
 <script src="/pedal_canvas.js"></script>
 <script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const statusEl = $('status');
+const status = (t, err) => { statusEl.innerHTML = t; statusEl.classList.toggle('err', !!err); };
+
+const S = {              // estado global del tester
+  ctx: null, nodes: null, gains: null, sum: null, conv: null, master: null, inBus: null,
+  caps: [], W: {v:3, t:1.5, b:1.5, tc:0.75},
+  vals: {0:0, 1:0.5, 2:0.5, 3:0.5, 4:0.5, 5:0, 6:0.3, 7:0, 8:0, 9:1, 10:1, 11:0, 12:0},
+  nodeFile: [null, null], modelCache: new Map(),
+  cabOn: true, diSrc: null, micSrc: null, micStream: null,
+  initP: null, busy: false, dirty: false,
+};
+
+// ── el canvas del AC30 (independiente del audio: se monta al tiro) ──
 (async () => {
-  const status = (t) => document.getElementById('status').innerHTML = t;
-  const grids = await (await fetch('/grids.json')).json();
-  const entry = grids['Amp_EN30'];
-  const W = entry.axis_weights || {v:3, t:1.5, b:1.5, tc:0.75};
-  const caps = (entry.captures || []).filter(c => !c.boost);
+  try {
+    const grids = await (await fetch('/grids.json')).json();
+    const entry = grids['Amp_EN30'];
+    S.W = entry.axis_weights || S.W;
+    S.caps = (entry.captures || []).filter(c => !c.boost);
+    if (window.RBPedalCanvas && RBPedalCanvas.ready) { try { await RBPedalCanvas.ready(); } catch (_) {} }
+    RBPedalCanvas.attach(document.querySelector('#face canvas'), 'boxac30', {
+      values: S.vals, interactive: true,
+      onChange: (id, v) => { S.vals[id] = v; repick(); },
+    });
+    status(`grilla lista — ${S.caps.length} capturas. Aprieta ▶ DI loop para iniciar el audio.`);
+  } catch (e) { status('ERROR cargando grilla/canvas: ' + e.message, true); throw e; }
+})();
 
-  // ── audio ──
-  const ctx = new AudioContext({ sampleRate: 48000 });
-  await ctx.audioWorklet.addModule('/nam-processor.js');
-  const glue = await (await fetch('/nam-core.js')).text();
-  const wasm = await (await fetch('/nam-core.wasm')).arrayBuffer();
-  const mkNode = () => {
-    const n = new AudioWorkletNode(ctx, 'nam-processor', { numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1] });
-    n.port.postMessage({ type:'load-wasm', wasmBinary: wasm.slice(0), glueCode: glue });
-    return n;
-  };
-  const nodes = [mkNode(), mkNode()];
-  const gains = [ctx.createGain(), ctx.createGain()];
-  gains[0].gain.value = 1; gains[1].gain.value = 0;
-  const sum = ctx.createGain(); sum.gain.value = 1;
-  nodes[0].connect(gains[0]).connect(sum);
-  nodes[1].connect(gains[1]).connect(sum);
-  // cab por convolución (nuestro IR real)
-  const conv = ctx.createConvolver();
-  conv.buffer = await ctx.decodeAudioData(await (await fetch('/cab.wav')).arrayBuffer());
-  const master = ctx.createGain(); master.gain.value = 1.0;
-  let cabOn = true;
-  const wire = () => { sum.disconnect(); conv.disconnect();
-    if (cabOn) { sum.connect(conv); conv.connect(master); } else sum.connect(master); };
-  wire();
-  master.connect(ctx.destination);
-  const inBus = ctx.createGain(); inBus.gain.value = 1;
-  inBus.connect(nodes[0]); inBus.connect(nodes[1]);
+// ── init de audio, perezoso (primer gesto) y con errores visibles ──
+function initAudio() {
+  if (S.initP) return S.initP;
+  S.initP = (async () => {
+    status('iniciando audio…');
+    const ctx = new AudioContext({ sampleRate: 48000 });
+    await ctx.resume();
+    await ctx.audioWorklet.addModule('/nam-processor.js');
+    const glue = await (await fetch('/nam-core.js')).text();
+    const wasm = await (await fetch('/nam-core.wasm')).arrayBuffer();
+    const mk = () => {
+      const n = new AudioWorkletNode(ctx, 'nam-processor',
+        { numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1] });
+      n.port.postMessage({ type:'load-wasm', wasmBinary: wasm.slice(0), glueCode: glue });
+      n.port.onmessage = (e) => { if (e.data && e.data.type === 'error')
+        status('worklet: ' + e.data.message, true); };
+      return n;
+    };
+    S.ctx = ctx;
+    S.nodes = [mk(), mk()];
+    S.gains = [ctx.createGain(), ctx.createGain()];
+    S.gains[0].gain.value = 1; S.gains[1].gain.value = 0;
+    S.sum = ctx.createGain();
+    S.nodes[0].connect(S.gains[0]).connect(S.sum);
+    S.nodes[1].connect(S.gains[1]).connect(S.sum);
+    S.conv = ctx.createConvolver();
+    S.conv.buffer = await ctx.decodeAudioData(await (await fetch('/cab.wav')).arrayBuffer());
+    S.master = ctx.createGain(); S.master.gain.value = $('vol').value / 100;
+    S.master.connect(ctx.destination);
+    S.inBus = ctx.createGain();
+    S.inBus.connect(S.nodes[0]); S.inBus.connect(S.nodes[1]);
+    wireCab();
+    await repick(true);
+    status('audio listo — dale al DI o conecta la guitarra.');
+  })().catch(e => { S.initP = null; status('ERROR de audio: ' + e.message, true); throw e; });
+  return S.initP;
+}
 
-  // ── carga de modelos (cache + doble instancia) ──
-  const modelCache = new Map();
-  const nodeFile = [null, null];
-  async function getModel(f) {
-    if (!modelCache.has(f)) modelCache.set(f, await (await fetch('/nam/' + encodeURIComponent(f))).text());
-    return modelCache.get(f);
+function wireCab() {
+  if (!S.sum) return;
+  try { S.sum.disconnect(); } catch (_) {}
+  try { S.conv.disconnect(); } catch (_) {}
+  if (S.cabOn) { S.sum.connect(S.conv); S.conv.connect(S.master); }
+  else S.sum.connect(S.master);
+}
+
+// ── grilla: vecinos + crossfade ──
+const axes = () => {
+  const ch = S.vals[10] < 0.25 ? 'N' : 'TB';
+  return { ch, v: (ch === 'TB' ? S.vals[1] : S.vals[0]) * 10,
+           t: S.vals[2] * 10, b: S.vals[3] * 10, tc: S.vals[8] * 10 };
+};
+const dist = (c, a) => {
+  let d = (S.W.v || 3) * Math.abs(c.v - a.v) + (S.W.tc || 0.75) * Math.abs(c.tc - a.tc);
+  if ('b' in c) d += (S.W.b || 1.5) * Math.abs(c.b - a.b) + (S.W.t || 1.5) * Math.abs(c.t - a.t);
+  return d;
+};
+const capName = (c) => `${c.ch} V${c.v} TC${c.tc}` + ('b' in c ? ` B${c.b} T${c.t}` : '');
+
+async function getModel(f) {
+  if (!S.modelCache.has(f))
+    S.modelCache.set(f, await (await fetch('/nam/' + encodeURIComponent(f))).text());
+  return S.modelCache.get(f);
+}
+async function ensureLoaded(pair) {
+  for (const f of pair) if (!S.nodeFile.includes(f)) {
+    const idle = pair.indexOf(S.nodeFile[0]) >= 0 ? 1 : 0;
+    S.nodes[idle].port.postMessage({ type:'load-model', modelJson: await getModel(f) });
+    S.nodeFile[idle] = f;
   }
-  async function ensureLoaded(pair) {
-    // conserva el nodo que ya tenga uno del par; carga el otro en el nodo libre
-    for (const f of pair) if (!nodeFile.includes(f)) {
-      const idle = pair.indexOf(nodeFile[0]) >= 0 ? 1 : 0;
-      nodes[idle].port.postMessage({ type:'load-model', modelJson: await getModel(f) });
-      nodeFile[idle] = f;
-    }
-  }
-
-  // ── estado de perillas → ejes de grilla ──
-  // ids boxac30: 0 NormalVol 1 TBVol 2 Treble 3 Bass 8 ToneCut 10 Input
-  const vals = {0:0, 1:0.5, 2:0.5, 3:0.5, 4:0.5, 5:0, 6:0.3, 7:0, 8:0, 9:1, 10:1, 11:0, 12:0};
-  const axes = () => {
-    const ch = vals[10] < 0.25 ? 'N' : 'TB';
-    return { ch,
-      v: (ch === 'TB' ? vals[1] : vals[0]) * 10,
-      t: vals[2] * 10, b: vals[3] * 10, tc: vals[8] * 10 };
-  };
-  const dist = (c, a) => {
-    let d = (W.v||3) * Math.abs(c.v - a.v) + (W.tc||0.75) * Math.abs(c.tc - a.tc);
-    if ('b' in c) d += (W.b||1.5) * Math.abs(c.b - a.b) + (W.t||1.5) * Math.abs(c.t - a.t);
-    return d;
-  };
-  const capName = (c) => `${c.ch} V${c.v} TC${c.tc}` + ('b' in c ? ` B${c.b} T${c.t}` : '');
-
-  let busy = false, dirty = false;
-  async function repick() {
-    if (busy) { dirty = true; return; }
-    busy = true;
-    try {
-      const a = axes();
-      const pool = caps.filter(c => c.ch === a.ch).map(c => ({ c, d: dist(c, a) }))
+}
+async function repick(force) {
+  if (!S.ctx) {            // audio aún no inicia: muestra el pick igual
+    const a = axes();
+    const pool = S.caps.filter(c => c.ch === a.ch).map(c => ({ c, d: dist(c, a) }))
                        .sort((x, y) => x.d - y.d);
-      if (!pool.length) return;
+    if (pool.length) {
       const A = pool[0], B = pool[1] || pool[0];
-      await ensureLoaded([A.c.file, B.c.file]);
-      const x = A.d + B.d < 1e-6 ? 0 : A.d / (A.d + B.d);  // 0 = todo A
-      const gFor = (f, w) => { const i = nodeFile.indexOf(f);
-        if (i >= 0) gains[i].gain.setTargetAtTime(w, ctx.currentTime, 0.03); };
-      gains[0].gain.setTargetAtTime(0, ctx.currentTime, 0.03);
-      gains[1].gain.setTargetAtTime(0, ctx.currentTime, 0.03);
-      gFor(A.c.file, Math.cos(x * Math.PI / 2));
-      gFor(B.c.file, Math.sin(x * Math.PI / 2));
+      const x = A.d + B.d < 1e-6 ? 0 : A.d / (A.d + B.d);
       const pa = Math.round(100 * Math.cos(x * Math.PI / 2) ** 2);
-      status(`<b>${capName(A.c)}</b> ${pa}% &nbsp;⇆&nbsp; <b>${capName(B.c)}</b> ${100 - pa}%`
-             + ` &nbsp;·&nbsp; canal ${a.ch} · V ${a.v.toFixed(1)} T ${a.t.toFixed(1)} B ${a.b.toFixed(1)} TC ${a.tc.toFixed(1)}`);
-    } finally {
-      busy = false;
-      if (dirty) { dirty = false; repick(); }
+      status(`(sin audio aún) <b>${capName(A.c)}</b> ${pa}% ⇆ <b>${capName(B.c)}</b> ${100 - pa}%`);
     }
+    return;
   }
+  if (S.busy && !force) { S.dirty = true; return; }
+  S.busy = true;
+  try {
+    const a = axes();
+    const pool = S.caps.filter(c => c.ch === a.ch).map(c => ({ c, d: dist(c, a) }))
+                       .sort((x, y) => x.d - y.d);
+    if (!pool.length) return;
+    const A = pool[0], B = pool[1] || pool[0];
+    await ensureLoaded([A.c.file, B.c.file]);
+    const x = A.d + B.d < 1e-6 ? 0 : A.d / (A.d + B.d);
+    const gFor = (f, w) => { const i = S.nodeFile.indexOf(f);
+      if (i >= 0) S.gains[i].gain.setTargetAtTime(w, S.ctx.currentTime, 0.03); };
+    S.gains[0].gain.setTargetAtTime(0, S.ctx.currentTime, 0.03);
+    S.gains[1].gain.setTargetAtTime(0, S.ctx.currentTime, 0.03);
+    gFor(A.c.file, Math.cos(x * Math.PI / 2));
+    gFor(B.c.file, Math.sin(x * Math.PI / 2));
+    const pa = Math.round(100 * Math.cos(x * Math.PI / 2) ** 2);
+    status(`<b>${capName(A.c)}</b> ${pa}% &nbsp;⇆&nbsp; <b>${capName(B.c)}</b> ${100 - pa}%`
+           + ` &nbsp;·&nbsp; canal ${a.ch} · V ${a.v.toFixed(1)} T ${a.t.toFixed(1)} B ${a.b.toFixed(1)} TC ${a.tc.toFixed(1)}`);
+  } catch (e) { status('ERROR pick: ' + e.message, true);
+  } finally { S.busy = false; if (S.dirty) { S.dirty = false; repick(); } }
+}
 
-  // ── canvas del AC30 ──
-  const canvas = document.querySelector('#face canvas');
-  const attach = () => RBPedalCanvas.attach(canvas, 'boxac30', {
-    values: vals, interactive: true,
-    onChange: (id, v) => { vals[id] = v; repick(); },
-  });
-  if (RBPedalCanvas.ready) { try { await RBPedalCanvas.ready(); } catch (_) {} }
-  attach();
-  await repick();
-
-  // ── fuentes de entrada ──
-  let diSrc = null, micSrc = null, micStream = null;
-  const btnDi = document.getElementById('btnDi'), btnMic = document.getElementById('btnMic');
-  btnDi.onclick = async () => {
-    await ctx.resume();
-    if (diSrc) { diSrc.stop(); diSrc = null; btnDi.classList.remove('on'); return; }
-    const buf = await ctx.decodeAudioData(await (await fetch('/di.wav')).arrayBuffer());
-    diSrc = ctx.createBufferSource(); diSrc.buffer = buf; diSrc.loop = true;
-    diSrc.connect(inBus); diSrc.start();
-    btnDi.classList.add('on');
-  };
-  btnMic.onclick = async () => {
-    await ctx.resume();
-    if (micSrc) { micSrc.disconnect(); micStream.getTracks().forEach(t => t.stop());
-      micSrc = null; btnMic.classList.remove('on'); return; }
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: {
+// ── botones (conectados DESDE YA — no dependen del init) ──
+$('btnDi').onclick = async () => {
+  try {
+    await initAudio();
+    if (S.diSrc) { S.diSrc.stop(); S.diSrc = null; $('btnDi').classList.remove('on'); return; }
+    status('cargando DI…');
+    const buf = await S.ctx.decodeAudioData(await (await fetch('/di.wav')).arrayBuffer());
+    S.diSrc = S.ctx.createBufferSource(); S.diSrc.buffer = buf; S.diSrc.loop = true;
+    S.diSrc.connect(S.inBus); S.diSrc.start();
+    $('btnDi').classList.add('on');
+    await repick(true);
+  } catch (e) { status('ERROR DI: ' + e.message, true); }
+};
+$('btnMic').onclick = async () => {
+  try {
+    await initAudio();
+    if (S.micSrc) { S.micSrc.disconnect(); S.micStream.getTracks().forEach(t => t.stop());
+      S.micSrc = null; $('btnMic').classList.remove('on'); return; }
+    const devId = $('inDev').value;
+    S.micStream = await navigator.mediaDevices.getUserMedia({ audio: {
+      deviceId: devId ? { exact: devId } : undefined,
       echoCancellation: false, autoGainControl: false, noiseSuppression: false } });
-    micSrc = ctx.createMediaStreamSource(micStream);
-    micSrc.connect(inBus);
-    btnMic.classList.add('on');
-  };
-  document.getElementById('btnCab').onclick = (e) => {
-    cabOn = !cabOn; wire(); e.target.classList.toggle('on', cabOn);
-    e.target.textContent = cabOn ? 'Cab 2x12 ON' : 'Cab OFF (amp-only)';
-  };
-  document.getElementById('vol').oninput = (e) => master.gain.value = e.target.value / 100;
-})().catch(e => { document.getElementById('status').textContent = 'ERROR: ' + e.message; console.error(e); });
+    S.micSrc = S.ctx.createMediaStreamSource(S.micStream);
+    S.micSrc.connect(S.inBus);
+    $('btnMic').classList.add('on');
+    // con permiso otorgado ya aparecen los nombres de dispositivos
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const sel = $('inDev'); const cur = sel.value;
+    sel.innerHTML = '<option value="">entrada por defecto</option>' +
+      devs.filter(d => d.kind === 'audioinput')
+          .map(d => `<option value="${d.deviceId}">${d.label || d.deviceId.slice(0, 8)}</option>`).join('');
+    sel.value = cur;
+    await repick(true);
+  } catch (e) { status('ERROR entrada: ' + e.message, true); }
+};
+$('inDev').onchange = () => {      // cambia de dispositivo en caliente
+  if (S.micSrc) { $('btnMic').onclick(); $('btnMic').onclick(); }
+};
+$('btnCab').onclick = (e) => {
+  S.cabOn = !S.cabOn; wireCab();
+  e.target.classList.toggle('on', S.cabOn);
+  e.target.textContent = S.cabOn ? 'Cab 2x12 ON' : 'Cab OFF (amp-only)';
+};
+$('vol').oninput = (e) => { if (S.master) S.master.gain.value = e.target.value / 100; };
 </script>
 </body>
 </html>
