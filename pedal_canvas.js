@@ -7186,7 +7186,8 @@
       {id:7,cx:.555,cy:.225,r:.0135,style:'jcsilver'} ],// DEPTH
     sw3:[{id:8,cx:.602,cy:.225,hw:13,hh:28}],           // palanca CHORUS 3 posiciones
     draw(d,vals){ const {ctx:c,W,H,s}=d;
-      const ink=rgb(226,227,230), inkF='rgba(226,227,230,0.6)';
+      const ink=rgb(226,227,230), inkF='rgba(226,227,230,0.6)',
+            inkD=rgb(26,29,29), inkDF='rgba(26,29,29,0.65)';
       // ── tolex negro rugoso ──
       const bgr=c.createLinearGradient(0,0,0,H); bgr.addColorStop(0,rgb(34,33,34)); bgr.addColorStop(.5,rgb(26,25,26)); bgr.addColorStop(1,rgb(16,15,16));
       c.fillStyle=bgr; c.fillRect(0,0,W,H);
@@ -7207,17 +7208,22 @@
       const pgr=c.createLinearGradient(0,py,0,py+ph); pgr.addColorStop(0,rgb(40,40,42)); pgr.addColorStop(.5,rgb(29,29,31)); pgr.addColorStop(1,rgb(20,20,22));
       rr(c,px,py,pw,ph,3.5*s); c.fillStyle=pgr; c.fill();
       c.save(); rr(c,px,py,pw,ph,3.5*s); c.clip();
-      // seccion CHORUS oliva oscura (rate/depth/palanca)
-      const ox0=W*.472, ox1=W*.628;
-      const og=c.createLinearGradient(0,py,0,py+ph); og.addColorStop(0,rgb(84,86,56)); og.addColorStop(.5,rgb(72,74,48)); og.addColorStop(1,rgb(54,56,36));
+      // seccion principal GRIS AZUL-VERDOSA (DISTORTION..REVERB, como la foto)
+      const gx0=W*.143, ox0=W*.472, ox1=W*.628;
+      const bg3=c.createLinearGradient(0,py,0,py+ph);
+      bg3.addColorStop(0,rgb(178,187,185)); bg3.addColorStop(.5,rgb(156,166,164)); bg3.addColorStop(1,rgb(132,142,141));
+      c.fillStyle=bg3; c.fillRect(gx0,py,ox0-gx0,ph);
+      // seccion CHORUS tan-oliva amarillenta (rate/depth/palanca)
+      const og=c.createLinearGradient(0,py,0,py+ph);
+      og.addColorStop(0,rgb(182,175,136)); og.addColorStop(.5,rgb(164,157,118)); og.addColorStop(1,rgb(138,132,96));
       c.fillStyle=og; c.fillRect(ox0,py,ox1-ox0,ph);
-      c.strokeStyle='rgba(255,255,255,0.05)'; c.lineWidth=1;
+      c.strokeStyle='rgba(255,255,255,0.07)'; c.lineWidth=1;
       for(let yy=py+2*s; yy<py+ph; yy+=2.4*s){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
       c.restore();
       rr(c,px,py,pw,ph,3.5*s); c.strokeStyle=rgb(78,80,84); c.lineWidth=1.1*s; c.stroke();
       const topY=py+ph*.14, botY=py+ph*.86, ky=.225*H;
-      [.143,.243,.398,.472,.628].forEach(xx=>{ c.beginPath(); c.moveTo(xx*W,py+ph*.08); c.lineTo(xx*W,py+ph*.92);
-        c.strokeStyle='rgba(200,202,208,0.25)'; c.lineWidth=1*s; c.stroke(); });
+      [.243,.398,.472].forEach(xx=>{ c.beginPath(); c.moveTo(xx*W,py+ph*.08); c.lineTo(xx*W,py+ph*.92);
+        c.strokeStyle='rgba(30,34,34,0.35)'; c.lineWidth=1*s; c.stroke(); });
       // ── INPUT HIGH/LOW ──
       const jack=(jx2,jy2)=>{ c.beginPath(); c.arc(jx2,jy2,6.5*s,0,7); c.fillStyle=rgb(14,13,13); c.fill();
         c.strokeStyle=rgb(150,153,158); c.lineWidth=1.7*s; c.stroke();
@@ -7231,28 +7237,28 @@
       // ── labels + numeros compactos ──
       const KR=.0135*W;
       const fan=(kx,offLbl)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
-        c.font=`700 ${Math.round(6.2*s)}px ${F.barlow}`; c.fillStyle=ink;
+        c.font=`700 ${Math.round(6.2*s)}px ${F.barlow}`; c.fillStyle=inkD;
         for(let n=0;n<=10;n+=5){ const aa=ang(n/10); const rr2=KR*1.55;
           c.fillText(n===0&&offLbl?offLbl:String(n), kx*W+rr2*Math.cos(aa), ky+rr2*Math.sin(aa)); }
         c.restore(); };
       fan(.168,'OFF'); fan(.218); fan(.268); fan(.318); fan(.368); fan(.430); fan(.505); fan(.555);
-      textSpaced(d,.168*W,topY,F.barlow,6,ink,'DISTORTION',0.01);
-      textSpaced(d,.218*W,topY,F.barlow,6,ink,'VOLUME',0.02);
-      textSpaced(d,.268*W,topY,F.barlow,6,ink,'HI-TREBLE',0.01);
-      textSpaced(d,.318*W,topY,F.barlow,6,ink,'MIDDLE',0.02);
-      textSpaced(d,.368*W,topY,F.barlow,6,ink,'BASS',0.02);
-      textSpaced(d,.430*W,topY,F.barlow,6,ink,'REVERB',0.02);
-      textSpaced(d,.505*W,topY,F.barlow,6,ink,'RATE',0.02);
-      textSpaced(d,.555*W,topY,F.barlow,6,ink,'DEPTH',0.02);
-      c.strokeStyle='rgba(226,227,230,0.5)'; c.lineWidth=1*s;
+      textSpaced(d,.168*W,topY,F.barlow,6,inkD,'DISTORTION',0.01);
+      textSpaced(d,.218*W,topY,F.barlow,6,inkD,'VOLUME',0.02);
+      textSpaced(d,.268*W,topY,F.barlow,6,inkD,'HI-TREBLE',0.01);
+      textSpaced(d,.318*W,topY,F.barlow,6,inkD,'MIDDLE',0.02);
+      textSpaced(d,.368*W,topY,F.barlow,6,inkD,'BASS',0.02);
+      textSpaced(d,.430*W,topY,F.barlow,6,inkD,'REVERB',0.02);
+      textSpaced(d,.505*W,topY,F.barlow,6,inkD,'RATE',0.02);
+      textSpaced(d,.555*W,topY,F.barlow,6,inkD,'DEPTH',0.02);
+      c.strokeStyle='rgba(26,29,29,0.55)'; c.lineWidth=1*s;
       c.beginPath(); c.moveTo(.268*W-12*s,py+ph*.05+4*s); c.lineTo(.268*W-12*s,py+ph*.05);
       c.lineTo(.368*W+12*s,py+ph*.05); c.lineTo(.368*W+12*s,py+ph*.05+4*s); c.stroke();
-      textSpaced(d,.318*W,py+ph*.055,F.barlow,5,inkF,'EQUALIZER',0.05);
+      textSpaced(d,.318*W,py+ph*.055,F.barlow,5,inkDF,'EQUALIZER',0.05);
       // palanca CHORUS (engine) + marcas
-      textSpaced(d,.602*W,topY,F.barlow,6,ink,'CHORUS',0.02);
-      textSpaced(d,.620*W,ky-13*s,F.barlow,5,inkF,'VIB',0.02);
-      textSpaced(d,.620*W,ky,F.barlow,5,inkF,'OFF',0.02);
-      textSpaced(d,.620*W,ky+13*s,F.barlow,5,inkF,'ON',0.02);
+      textSpaced(d,.602*W,topY,F.barlow,6,inkD,'CHORUS',0.02);
+      textSpaced(d,.620*W,ky-13*s,F.barlow,5,inkDF,'VIB',0.02);
+      textSpaced(d,.620*W,ky,F.barlow,5,inkDF,'OFF',0.02);
+      textSpaced(d,.620*W,ky+13*s,F.barlow,5,inkDF,'ON',0.02);
       // ── seccion derecha: badge + Ronald + piloto + POWER (compacta) ──
       rr(c,.636*W,py+ph*.12,W*.150,ph*.40,3*s); c.fillStyle=rgb(9,9,10); c.fill();
       c.strokeStyle=rgb(200,202,208); c.lineWidth=1.2*s; c.stroke();
