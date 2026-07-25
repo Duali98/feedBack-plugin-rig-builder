@@ -7250,6 +7250,20 @@
       textSpaced(d,.6315*W,ky-14*s,F.barlow,7,inkDF,'VIB',0.02);
       textSpaced(d,.6315*W,ky,F.barlow,7,inkDF,'OFF',0.02);
       textSpaced(d,.6315*W,ky+14*s,F.barlow,7,inkDF,'ON',0.02);
+      // monograma de cinta "R" (parodia del logo)
+      const monoR=(mx,my,mu,lw,col)=>{ c.save(); c.lineCap='round'; c.lineJoin='round';
+        c.strokeStyle=col; c.lineWidth=lw;
+        c.beginPath();
+        c.moveTo(mx+14*mu,my+92*mu); c.lineTo(mx+14*mu,my+26*mu);
+        c.quadraticCurveTo(mx+14*mu,my+12*mu,mx+28*mu,my+12*mu);
+        c.lineTo(mx+72*mu,my+12*mu);
+        c.quadraticCurveTo(mx+88*mu,my+12*mu,mx+88*mu,my+28*mu);
+        c.lineTo(mx+88*mu,my+40*mu);
+        c.quadraticCurveTo(mx+88*mu,my+56*mu,mx+72*mu,my+56*mu);
+        c.lineTo(mx+38*mu,my+56*mu);
+        c.stroke();
+        c.beginPath(); c.moveTo(mx+56*mu,my+62*mu); c.lineTo(mx+86*mu,my+92*mu); c.stroke();
+        c.restore(); };
       // badge + piloto + Ronald + POWER (llenando la seccion derecha)
       rr(c,.652*W,py+ph*.09,W*.278,ph*.38,3*s); c.fillStyle=rgb(9,9,10); c.fill();
       c.strokeStyle=rgb(205,207,212); c.lineWidth=1.5*s; c.stroke();
