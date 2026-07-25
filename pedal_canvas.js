@@ -6208,25 +6208,25 @@
       const cyP=py+ph*.50, topY=py+ph*.115, botY=py+ph*.885, ky=.810*H;
       // ── rockers POWER (rojo iluminado) y STANDBY (negro) ──
       const rocker=(x,red)=>{
-        rr(c,x-17*s,cyP-23*s,34*s,46*s,3.5*s); c.fillStyle=rgb(14,12,10); c.fill();
+        rr(c,x-19*s,cyP-26*s,38*s,52*s,3.5*s); c.fillStyle=rgb(14,12,10); c.fill();
         c.strokeStyle='rgba(255,255,255,0.22)'; c.lineWidth=1*s; c.stroke();
-        if(red){ const rg2=c.createLinearGradient(0,cyP-18*s,0,cyP+18*s);
+        if(red){ const rg2=c.createLinearGradient(0,cyP-21*s,0,cyP+21*s);
           rg2.addColorStop(0,rgb(255,120,86)); rg2.addColorStop(.5,rgb(224,46,28)); rg2.addColorStop(1,rgb(128,16,10));
-          rr(c,x-12*s,cyP-18*s,24*s,36*s,2.5*s); c.fillStyle=rg2; c.fill();
+          rr(c,x-14*s,cyP-21*s,28*s,42*s,2.5*s); c.fillStyle=rg2; c.fill();
           c.save(); c.globalAlpha=0.38; c.beginPath(); c.arc(x,cyP,28*s,0,7);
           const gl=c.createRadialGradient(x,cyP,6*s,x,cyP,28*s); gl.addColorStop(0,'rgba(255,90,50,0.9)'); gl.addColorStop(1,'rgba(255,90,50,0)');
           c.fillStyle=gl; c.fill(); c.restore();
-          c.fillStyle='rgba(255,232,222,0.55)'; c.fillRect(x-10*s,cyP-15*s,20*s,4*s);
-          c.fillStyle='rgba(90,10,6,0.5)'; c.fillRect(x-10*s,cyP+11*s,20*s,4*s);
-        } else { const bg2=c.createLinearGradient(0,cyP-18*s,0,cyP+18*s);
+          c.fillStyle='rgba(255,232,222,0.55)'; c.fillRect(x-12*s,cyP-18*s,24*s,4.5*s);
+          c.fillStyle='rgba(90,10,6,0.5)'; c.fillRect(x-12*s,cyP+13*s,24*s,4.5*s);
+        } else { const bg2=c.createLinearGradient(0,cyP-21*s,0,cyP+21*s);
           bg2.addColorStop(0,rgb(74,74,80)); bg2.addColorStop(.5,rgb(38,38,42)); bg2.addColorStop(1,rgb(16,16,18));
-          rr(c,x-12*s,cyP-18*s,24*s,36*s,2.5*s); c.fillStyle=bg2; c.fill();
-          c.fillStyle='rgba(255,255,255,0.16)'; c.fillRect(x-10*s,cyP-15*s,20*s,4*s);
-          c.fillStyle='rgba(0,0,0,0.45)'; c.fillRect(x-10*s,cyP+11*s,20*s,4*s); } };
+          rr(c,x-14*s,cyP-21*s,28*s,42*s,2.5*s); c.fillStyle=bg2; c.fill();
+          c.fillStyle='rgba(255,255,255,0.16)'; c.fillRect(x-12*s,cyP-18*s,24*s,4.5*s);
+          c.fillStyle='rgba(0,0,0,0.45)'; c.fillRect(x-12*s,cyP+13*s,24*s,4.5*s); } };
       rocker(.085*W,true); rocker(.140*W,false);
-      textSpaced(d,.085*W,py+ph*.06,F.barlow,6,inkF,'0',0.02); textSpaced(d,.140*W,py+ph*.06,F.barlow,6,inkF,'0',0.02);
-      textSpaced(d,.085*W,botY,F.barlow,6.5,ink,'1   POWER',0.03);
-      textSpaced(d,.140*W,botY,F.barlow,6.5,ink,'1   STANDBY',0.02);
+      textSpaced(d,.085*W,py+ph*.06,F.barlow,7,inkF,'0',0.02); textSpaced(d,.140*W,py+ph*.06,F.barlow,7,inkF,'0',0.02);
+      textSpaced(d,.085*W,botY,F.barlow,7.5,ink,'1   POWER',0.03);
+      textSpaced(d,.140*W,botY,F.barlow,7.5,ink,'1   STANDBY',0.02);
       // bloque JCM 800 / LEAD SERIES
       c.save(); c.textAlign='left'; c.textBaseline='middle';
       c.font=`italic 800 ${Math.round(21*s)}px ${F.barlow}`; c.fillStyle=rgb(22,17,10);
@@ -6236,28 +6236,28 @@
       // ── abanicos 0-10 (pares) + labels ──
       const KR=.0140*W;
       const fan=(kx)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
-        c.font=`700 ${Math.round(7.2*s)}px ${F.barlow}`; c.fillStyle=ink;
+        c.font=`700 ${Math.round(8.0*s)}px ${F.barlow}`; c.fillStyle=ink;
         for(let n=0;n<=10;n+=2){ const aa=ang(n/10); const rr2=KR*1.52;
           c.fillText(String(n), kx*W+rr2*Math.cos(aa), ky+rr2*Math.sin(aa)); }
         c.restore(); };
       [.315,.375,.435,.495,.555,.615].forEach(fan);
-      textSpaced(d,.315*W,topY,F.barlow,6.5,ink,'PRESENCE',0.02);
-      textSpaced(d,.375*W,topY,F.barlow,6.5,ink,'BASS',0.03);
-      textSpaced(d,.435*W,topY,F.barlow,6.5,ink,'MIDDLE',0.02);
-      textSpaced(d,.495*W,topY,F.barlow,6.5,ink,'TREBLE',0.02);
-      textSpaced(d,.555*W,topY,F.barlow,6.5,ink,'MASTER',0.02);
-      textSpaced(d,.615*W,topY,F.barlow,6.5,ink,'PRE-AMP',0.02);
-      textSpaced(d,.555*W,botY,F.barlow,6.5,ink,'VOLUME',0.02);
-      textSpaced(d,.615*W,botY,F.barlow,6.5,ink,'VOLUME',0.02);
+      textSpaced(d,.315*W,topY,F.barlow,7.5,ink,'PRESENCE',0.02);
+      textSpaced(d,.375*W,topY,F.barlow,7.5,ink,'BASS',0.03);
+      textSpaced(d,.435*W,topY,F.barlow,7.5,ink,'MIDDLE',0.02);
+      textSpaced(d,.495*W,topY,F.barlow,7.5,ink,'TREBLE',0.02);
+      textSpaced(d,.555*W,topY,F.barlow,7.5,ink,'MASTER',0.02);
+      textSpaced(d,.615*W,topY,F.barlow,7.5,ink,'PRE-AMP',0.02);
+      textSpaced(d,.555*W,botY,F.barlow,7.5,ink,'VOLUME',0.02);
+      textSpaced(d,.615*W,botY,F.barlow,7.5,ink,'VOLUME',0.02);
       // ── jacks HIGH / LOW SENSITIVITY + cable ──
       const jx=.678*W, jyH=py+ph*.30, jyL=py+ph*.70;
       const jack=(jx2,jy2)=>{ c.beginPath(); c.arc(jx2,jy2,7.5*s,0,7); c.fillStyle=rgb(14,13,13); c.fill();
         c.strokeStyle=rgb(168,140,78); c.lineWidth=2.2*s; c.stroke();
         c.beginPath(); c.arc(jx2,jy2,2.5*s,0,7); c.fillStyle=rgb(52,50,46); c.fill(); };
       jack(jx,jyH); jack(jx,jyL);
-      textSpaced(d,jx+22*s,jyH,F.barlow,6.5,ink,'HIGH',0.03);
-      textSpaced(d,jx+22*s,jyL,F.barlow,6.5,ink,'LOW',0.03);
-      textSpaced(d,jx+24*s,cyP,F.barlow,5.5,inkF,'SENSITIVITY',0.02);
+      textSpaced(d,jx+22*s,jyH,F.barlow,7.5,ink,'HIGH',0.03);
+      textSpaced(d,jx+22*s,jyL,F.barlow,7.5,ink,'LOW',0.03);
+      textSpaced(d,jx+24*s,cyP,F.barlow,6.5,inkF,'SENSITIVITY',0.02);
       rr(c,jx-4.6*s,jyH-5.5*s,9.2*s,6.5*s,2*s); c.fillStyle=rgb(36,34,32); c.fill();
       const cg=c.createLinearGradient(jx-4.6*s,jyH,jx+4.6*s,jyH); cg.addColorStop(0,rgb(188,192,198)); cg.addColorStop(0.5,rgb(120,124,130)); cg.addColorStop(1,rgb(188,192,198));
       rr(c,jx-4.6*s,jyH+1*s,9.2*s,3.6*s,1.4*s); c.fillStyle=cg; c.fill();
@@ -7168,28 +7168,27 @@
       // "Polystone" logo (bottom-right, like the panel)
       textC(d,W*.885,H*.46,F.anton,26,ink,'Polystone'); } };
 
-  // ── RONALD JC-120 (Roland JC-120H Jazz Chorus head) — proporciones 1:1 con
-  //    la foto: franja de panel ANGOSTA y compacta arriba, la gran rejilla de
-  //    cuadricula blanca con marco de piping dominando el frente, placa Ronald
-  //    grande a la izquierda, tachas alrededor y esquineras envolventes.
-  //    ids: 0 Volume 1 Treble 2 Middle 3 Bass 4 Distortion 5 Reverb 6 Rate
-  //    7 Depth 8 Chorus(3-pos). RS: Gain->Distortion.
+  // ── RONALD JC-120 (Roland JC-120H) — COPIA de la referencia: franja de
+  //    panel 25% con secciones gris-verde y oliva, tira de aluminio, rejilla
+  //    de cuadricula crema hasta abajo con placa Ronald (monograma de cinta
+  //    dibujado), tachas y esquineras. ids: 0 Volume 1 Treble 2 Middle 3 Bass
+  //    4 Distortion 5 Reverb 6 Rate 7 Depth 8 Chorus(3-pos). RS: Gain->Dist.
   P.ronaldjc120 = { w:1380, h:600, ptr:rgb(244,245,248), tick:rgb(172,174,180),
     knobs:[
-      {id:4,cx:.168,cy:.225,r:.0135,style:'jcsilver'},  // DISTORTION
-      {id:0,cx:.218,cy:.225,r:.0135,style:'jcsilver'},  // VOLUME
-      {id:1,cx:.268,cy:.225,r:.0135,style:'jcsilver'},  // HI-TREBLE
-      {id:2,cx:.318,cy:.225,r:.0135,style:'jcsilver'},  // MIDDLE
-      {id:3,cx:.368,cy:.225,r:.0135,style:'jcsilver'},  // BASS
-      {id:5,cx:.430,cy:.225,r:.0135,style:'jcsilver'},  // REVERB
-      {id:6,cx:.505,cy:.225,r:.0135,style:'jcsilver'},  // RATE
-      {id:7,cx:.555,cy:.225,r:.0135,style:'jcsilver'} ],// DEPTH
-    sw3:[{id:8,cx:.602,cy:.225,hw:13,hh:28}],           // palanca CHORUS 3 posiciones
+      {id:4,cx:.168,cy:.235,r:.0155,style:'jcsilver'},  // DISTORTION
+      {id:0,cx:.220,cy:.235,r:.0155,style:'jcsilver'},  // VOLUME
+      {id:1,cx:.272,cy:.235,r:.0155,style:'jcsilver'},  // HI-TREBLE
+      {id:2,cx:.324,cy:.235,r:.0155,style:'jcsilver'},  // MIDDLE
+      {id:3,cx:.376,cy:.235,r:.0155,style:'jcsilver'},  // BASS
+      {id:5,cx:.438,cy:.235,r:.0155,style:'jcsilver'},  // REVERB
+      {id:6,cx:.512,cy:.235,r:.0155,style:'jcsilver'},  // RATE
+      {id:7,cx:.564,cy:.235,r:.0155,style:'jcsilver'} ],// DEPTH
+    sw3:[{id:8,cx:.612,cy:.235,hw:13,hh:30}],           // palanca CHORUS
     draw(d,vals){ const {ctx:c,W,H,s}=d;
-      const ink=rgb(226,227,230), inkF='rgba(226,227,230,0.6)',
-            inkD=rgb(26,29,29), inkDF='rgba(26,29,29,0.65)';
+      const ink=rgb(230,231,234), inkF='rgba(230,231,234,0.65)',
+            inkD=rgb(22,25,25), inkDF='rgba(22,25,25,0.7)';
       // ── tolex negro rugoso ──
-      const bgr=c.createLinearGradient(0,0,0,H); bgr.addColorStop(0,rgb(34,33,34)); bgr.addColorStop(.5,rgb(26,25,26)); bgr.addColorStop(1,rgb(16,15,16));
+      const bgr=c.createLinearGradient(0,0,0,H); bgr.addColorStop(0,rgb(36,35,36)); bgr.addColorStop(.5,rgb(27,26,27)); bgr.addColorStop(1,rgb(17,16,17));
       c.fillStyle=bgr; c.fillRect(0,0,W,H);
       c.save(); c.beginPath(); c.rect(0,0,W,H); c.clip();
       for(let i=0;i<1000;i++){ const hx2=Math.abs(Math.sin(i*127.1)*43758.5453)%1, hy2=Math.abs(Math.sin(i*311.7)*268.5453)%1;
@@ -7198,134 +7197,138 @@
       const vg=c.createRadialGradient(W*.5,H*.44,H*.40,W*.5,H*.5,W*.62);
       vg.addColorStop(0,'rgba(255,255,255,0.02)'); vg.addColorStop(1,'rgba(0,0,0,0.34)');
       c.fillStyle=vg; c.fillRect(0,0,W,H);
-      // asa
       rr(c,W*.43,H*.006,W*.14,H*.040,11*s); c.fillStyle=rgb(12,12,13); c.fill();
       c.strokeStyle='rgba(255,255,255,0.09)'; c.lineWidth=1*s; c.stroke();
       c.restore();
-      // ── franja de panel ANGOSTA (como el real) ──
-      const py=H*.105, ph=H*.205, px=W*.062, pw=W*.876;
+      // ── PANEL (25% de alto, como el real) ──
+      const py=H*.095, ph=H*.25, px=W*.062, pw=W*.876;
       rr(c,px-3*s,py-3*s,pw+6*s,ph+6*s,5*s); c.fillStyle=rgb(5,5,6); c.fill();
-      const pgr=c.createLinearGradient(0,py,0,py+ph); pgr.addColorStop(0,rgb(40,40,42)); pgr.addColorStop(.5,rgb(29,29,31)); pgr.addColorStop(1,rgb(20,20,22));
+      const pgr=c.createLinearGradient(0,py,0,py+ph); pgr.addColorStop(0,rgb(42,42,44)); pgr.addColorStop(.5,rgb(30,30,32)); pgr.addColorStop(1,rgb(21,21,23));
       rr(c,px,py,pw,ph,3.5*s); c.fillStyle=pgr; c.fill();
       c.save(); rr(c,px,py,pw,ph,3.5*s); c.clip();
-      // seccion principal GRIS AZUL-VERDOSA (DISTORTION..REVERB, como la foto)
-      const gx0=W*.143, ox0=W*.472, ox1=W*.628;
+      const gx0=W*.143, ox0=W*.478, ox1=W*.640;
       const bg3=c.createLinearGradient(0,py,0,py+ph);
       bg3.addColorStop(0,rgb(122,132,128)); bg3.addColorStop(.5,rgb(104,114,111)); bg3.addColorStop(1,rgb(86,96,94));
       c.fillStyle=bg3; c.fillRect(gx0,py,ox0-gx0,ph);
-      // seccion CHORUS tan-oliva amarillenta (rate/depth/palanca)
       const og=c.createLinearGradient(0,py,0,py+ph);
       og.addColorStop(0,rgb(116,118,76)); og.addColorStop(.5,rgb(100,102,64)); og.addColorStop(1,rgb(82,84,52));
       c.fillStyle=og; c.fillRect(ox0,py,ox1-ox0,ph);
-      c.strokeStyle='rgba(255,255,255,0.07)'; c.lineWidth=1;
-      for(let yy=py+2*s; yy<py+ph; yy+=2.4*s){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
+      c.strokeStyle='rgba(255,255,255,0.06)'; c.lineWidth=1;
+      for(let yy=py+2*s; yy<py+ph; yy+=2.6*s){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
       c.restore();
-      rr(c,px,py,pw,ph,3.5*s); c.strokeStyle=rgb(78,80,84); c.lineWidth=1.1*s; c.stroke();
-      const topY=py+ph*.14, botY=py+ph*.86, ky=.225*H;
-      [.243,.398,.472].forEach(xx=>{ c.beginPath(); c.moveTo(xx*W,py+ph*.08); c.lineTo(xx*W,py+ph*.92);
-        c.strokeStyle='rgba(30,34,34,0.35)'; c.lineWidth=1*s; c.stroke(); });
-      // ── INPUT HIGH/LOW ──
-      const jack=(jx2,jy2)=>{ c.beginPath(); c.arc(jx2,jy2,6.5*s,0,7); c.fillStyle=rgb(14,13,13); c.fill();
-        c.strokeStyle=rgb(150,153,158); c.lineWidth=1.7*s; c.stroke();
-        c.beginPath(); c.arc(jx2,jy2,2.2*s,0,7); c.fillStyle=rgb(52,52,56); c.fill(); };
-      jack(.089*W,ky+4*s); jack(.118*W,ky+4*s);
-      textSpaced(d,.1035*W,topY,F.barlow,6.5,ink,'INPUT',0.05);
-      c.strokeStyle='rgba(226,227,230,0.55)'; c.lineWidth=1*s;
-      c.beginPath(); c.moveTo(.082*W,topY+6*s); c.lineTo(.082*W,topY+10*s); c.lineTo(.125*W,topY+10*s); c.lineTo(.125*W,topY+6*s); c.stroke();
-      textSpaced(d,.089*W,botY,F.barlow,5.5,inkF,'HIGH',0.02);
-      textSpaced(d,.118*W,botY,F.barlow,5.5,inkF,'LOW',0.02);
-      // ── labels + numeros compactos ──
-      const KR=.0135*W;
+      rr(c,px,py,pw,ph,3.5*s); c.strokeStyle=rgb(80,82,86); c.lineWidth=1.1*s; c.stroke();
+      const topY=py+ph*.13, botY=py+ph*.87, ky=.235*H;
+      [.248,.408,.478].forEach(xx=>{ c.beginPath(); c.moveTo(xx*W,py+ph*.07); c.lineTo(xx*W,py+ph*.93);
+        c.strokeStyle='rgba(28,32,32,0.35)'; c.lineWidth=1*s; c.stroke(); });
+      // INPUT
+      const jack=(jx2,jy2)=>{ c.beginPath(); c.arc(jx2,jy2,7.5*s,0,7); c.fillStyle=rgb(14,13,13); c.fill();
+        c.strokeStyle=rgb(150,153,158); c.lineWidth=1.9*s; c.stroke();
+        c.beginPath(); c.arc(jx2,jy2,2.5*s,0,7); c.fillStyle=rgb(52,52,56); c.fill(); };
+      jack(.090*W,ky+5*s); jack(.120*W,ky+5*s);
+      textSpaced(d,.105*W,topY,F.barlow,7.5,ink,'INPUT',0.05);
+      c.strokeStyle='rgba(230,231,234,0.55)'; c.lineWidth=1*s;
+      c.beginPath(); c.moveTo(.082*W,topY+7*s); c.lineTo(.082*W,topY+12*s); c.lineTo(.128*W,topY+12*s); c.lineTo(.128*W,topY+7*s); c.stroke();
+      textSpaced(d,.090*W,botY,F.barlow,6.5,inkF,'HIGH',0.02);
+      textSpaced(d,.120*W,botY,F.barlow,6.5,inkF,'LOW',0.02);
+      // labels + numeros (GRANDES)
+      const KR=.0155*W;
       const fan=(kx,offLbl)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
-        c.font=`700 ${Math.round(6.2*s)}px ${F.barlow}`; c.fillStyle=inkD;
+        c.font=`700 ${Math.round(8.2*s)}px ${F.barlow}`; c.fillStyle=inkD;
         for(let n=0;n<=10;n+=5){ const aa=ang(n/10); const rr2=KR*1.55;
           c.fillText(n===0&&offLbl?offLbl:String(n), kx*W+rr2*Math.cos(aa), ky+rr2*Math.sin(aa)); }
         c.restore(); };
-      fan(.168,'OFF'); fan(.218); fan(.268); fan(.318); fan(.368); fan(.430); fan(.505); fan(.555);
-      textSpaced(d,.168*W,topY,F.barlow,6,inkD,'DISTORTION',0.01);
-      textSpaced(d,.218*W,topY,F.barlow,6,inkD,'VOLUME',0.02);
-      textSpaced(d,.268*W,topY,F.barlow,6,inkD,'HI-TREBLE',0.01);
-      textSpaced(d,.318*W,topY,F.barlow,6,inkD,'MIDDLE',0.02);
-      textSpaced(d,.368*W,topY,F.barlow,6,inkD,'BASS',0.02);
-      textSpaced(d,.430*W,topY,F.barlow,6,inkD,'REVERB',0.02);
-      textSpaced(d,.505*W,topY,F.barlow,6,inkD,'RATE',0.02);
-      textSpaced(d,.555*W,topY,F.barlow,6,inkD,'DEPTH',0.02);
-      c.strokeStyle='rgba(26,29,29,0.55)'; c.lineWidth=1*s;
-      c.beginPath(); c.moveTo(.268*W-12*s,py+ph*.05+4*s); c.lineTo(.268*W-12*s,py+ph*.05);
-      c.lineTo(.368*W+12*s,py+ph*.05); c.lineTo(.368*W+12*s,py+ph*.05+4*s); c.stroke();
-      textSpaced(d,.318*W,py+ph*.055,F.barlow,5,inkDF,'EQUALIZER',0.05);
-      // palanca CHORUS (engine) + marcas
-      textSpaced(d,.602*W,topY,F.barlow,6,inkD,'CHORUS',0.02);
-      textSpaced(d,.620*W,ky-13*s,F.barlow,5,inkDF,'VIB',0.02);
-      textSpaced(d,.620*W,ky,F.barlow,5,inkDF,'OFF',0.02);
-      textSpaced(d,.620*W,ky+13*s,F.barlow,5,inkDF,'ON',0.02);
-      // ── seccion derecha: badge arriba + fila piloto/Ronald/POWER (compacta) ──
-      rr(c,.636*W,py+ph*.12,W*.128,ph*.36,3*s); c.fillStyle=rgb(9,9,10); c.fill();
+      fan(.168,'OFF'); fan(.220); fan(.272); fan(.324); fan(.376); fan(.438); fan(.512); fan(.564);
+      textSpaced(d,.168*W,topY,F.barlow,7,inkD,'DISTORTION',0.01);
+      textSpaced(d,.220*W,topY,F.barlow,7,inkD,'VOLUME',0.02);
+      textSpaced(d,.272*W,topY,F.barlow,7,inkD,'HI-TREBLE',0.01);
+      textSpaced(d,.324*W,topY,F.barlow,7,inkD,'MIDDLE',0.02);
+      textSpaced(d,.376*W,topY,F.barlow,7,inkD,'BASS',0.02);
+      textSpaced(d,.438*W,topY,F.barlow,7,inkD,'REVERB',0.02);
+      textSpaced(d,.512*W,topY,F.barlow,7,inkD,'RATE',0.02);
+      textSpaced(d,.564*W,topY,F.barlow,7,inkD,'DEPTH',0.02);
+      c.strokeStyle='rgba(22,25,25,0.55)'; c.lineWidth=1*s;
+      c.beginPath(); c.moveTo(.272*W-14*s,py+ph*.045+4*s); c.lineTo(.272*W-14*s,py+ph*.045);
+      c.lineTo(.376*W+14*s,py+ph*.045); c.lineTo(.376*W+14*s,py+ph*.045+4*s); c.stroke();
+      textSpaced(d,.324*W,py+ph*.05,F.barlow,6,inkDF,'EQUALIZER',0.05);
+      // palanca CHORUS
+      textSpaced(d,.612*W,topY,F.barlow,7,inkD,'CHORUS',0.02);
+      textSpaced(d,.6315*W,ky-14*s,F.barlow,6,inkDF,'VIB',0.02);
+      textSpaced(d,.6315*W,ky,F.barlow,6,inkDF,'OFF',0.02);
+      textSpaced(d,.6315*W,ky+14*s,F.barlow,6,inkDF,'ON',0.02);
+      // badge + piloto + Ronald + POWER
+      rr(c,.652*W,py+ph*.10,W*.135,ph*.36,3*s); c.fillStyle=rgb(9,9,10); c.fill();
       c.strokeStyle=rgb(205,207,212); c.lineWidth=1.4*s; c.stroke();
       c.save(); c.textAlign='center'; c.textBaseline='middle';
-      c.font=`italic 800 ${Math.round(9.5*s)}px ${F.barlow}`; c.fillStyle=rgb(242,243,246);
-      c.fillText('JAZZ CHORUS-120H', .700*W, py+ph*.30); c.restore();
-      const ry=py+ph*.70;
-      // piloto rojo en su cuadradito
-      rr(c,.636*W,ry-10*s,20*s,20*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
+      c.font=`italic 800 ${Math.round(11*s)}px ${F.barlow}`; c.fillStyle=rgb(242,243,246);
+      c.fillText('JAZZ CHORUS-120H', .7195*W, py+ph*.28); c.restore();
+      const ry=py+ph*.68;
+      rr(c,.652*W,ry-11*s,22*s,22*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
       c.strokeStyle='rgba(200,202,208,0.5)'; c.lineWidth=0.9*s; c.stroke();
-      const plx=.636*W+10*s, ply=ry;
-      c.save(); c.globalAlpha=0.5; c.beginPath(); c.arc(plx,ply,9*s,0,7);
-      const gl=c.createRadialGradient(plx,ply,1.5*s,plx,ply,9*s); gl.addColorStop(0,'rgba(255,80,55,0.95)'); gl.addColorStop(1,'rgba(255,80,55,0)');
+      const plx=.652*W+11*s, ply=ry;
+      c.save(); c.globalAlpha=0.5; c.beginPath(); c.arc(plx,ply,10*s,0,7);
+      const gl=c.createRadialGradient(plx,ply,1.5*s,plx,ply,10*s); gl.addColorStop(0,'rgba(255,80,55,0.95)'); gl.addColorStop(1,'rgba(255,80,55,0)');
       c.fillStyle=gl; c.fill(); c.restore();
-      c.beginPath(); c.arc(plx,ply,3.6*s,0,7);
-      const pr=c.createRadialGradient(plx-1*s,ply-1.3*s,0.5*s,plx,ply,3.6*s);
+      c.beginPath(); c.arc(plx,ply,4*s,0,7);
+      const pr=c.createRadialGradient(plx-1*s,ply-1.3*s,0.5*s,plx,ply,4*s);
       pr.addColorStop(0,rgb(255,150,120)); pr.addColorStop(.5,rgb(224,46,30)); pr.addColorStop(1,rgb(124,14,10));
       c.fillStyle=pr; c.fill();
-      // bloque Ronald
-      rr(c,.6555*W,ry-10*s,30*s,20*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
+      rr(c,.675*W,ry-11*s,34*s,22*s,2*s); c.fillStyle=rgb(9,9,10); c.fill();
       c.strokeStyle=rgb(160,162,168); c.lineWidth=0.9*s; c.stroke();
-      c.save(); c.textAlign='center'; c.textBaseline='middle';
-      c.font=`800 ${Math.round(6.5*s)}px ${F.bebas}`; c.fillStyle=rgb(238,240,244);
-      c.fillText('R2', .6555*W+9*s, ry-2.5*s); c.restore();
-      textSpaced(d,.6555*W+18*s,ry+4.5*s,F.barlow,4,ink,'Ronald',0.01);
-      // POWER
-      batToggle(d,.712*W,ry,7.5*s,true);
-      textSpaced(d,.735*W,ry-7*s,F.barlow,4.5,inkF,'ON',0.02);
-      textSpaced(d,.735*W,ry+8*s,F.barlow,4.5,inkF,'OFF',0.02);
-      textSpaced(d,.712*W,botY,F.barlow,5.5,ink,'POWER',0.02);
-      // ── GRAN rejilla de cuadricula con marco de piping ──
-      const gy=H*.345, gh=H*.545, gx=W*.062, gw=W*.876;
-      rr(c,gx-6*s,gy-6*s,gw+12*s,gh+12*s,7*s); c.fillStyle=rgb(6,6,7); c.fill();
-      rr(c,gx-6*s,gy-6*s,gw+12*s,gh+12*s,7*s);
-      const pipe=c.createLinearGradient(0,gy-6*s,0,gy+gh+6*s);
-      pipe.addColorStop(0,rgb(240,242,246)); pipe.addColorStop(.5,rgb(180,183,188)); pipe.addColorStop(1,rgb(228,231,236));
-      c.strokeStyle=pipe; c.lineWidth=4*s; c.stroke();
-      rr(c,gx,gy,gw,gh,4*s); c.fillStyle=rgb(13,13,14); c.fill();
-      c.save(); rr(c,gx,gy,gw,gh,4*s); c.clip();
-      // cuadricula fina blanca (tela JC)
-      c.strokeStyle='rgba(214,202,164,0.30)'; c.lineWidth=1;
-      for(let xx=gx;xx<gx+gw;xx+=6*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
-      for(let yy=gy;yy<gy+gh;yy+=6*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
-      c.strokeStyle='rgba(0,0,0,0.55)'; c.lineWidth=1.4*s;
-      for(let xx=gx+3*s;xx<gx+gw;xx+=6*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
-      for(let yy=gy+3*s;yy<gy+gh;yy+=6*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
-      const sheen=c.createRadialGradient(gx+gw*.5,gy+gh*.45,gh*.25,gx+gw*.5,gy+gh*.5,gw*.55);
-      sheen.addColorStop(0,'rgba(255,255,255,0.06)'); sheen.addColorStop(1,'rgba(0,0,0,0.32)');
+      // monograma chico en el bloque
+      const monoR=(mx,my,mu,lw,col)=>{ c.save(); c.lineCap='round'; c.lineJoin='round';
+        c.strokeStyle=col; c.lineWidth=lw;
+        c.beginPath();
+        c.moveTo(mx+14*mu,my+92*mu); c.lineTo(mx+14*mu,my+26*mu);
+        c.quadraticCurveTo(mx+14*mu,my+12*mu,mx+28*mu,my+12*mu);
+        c.lineTo(mx+72*mu,my+12*mu);
+        c.quadraticCurveTo(mx+88*mu,my+12*mu,mx+88*mu,my+28*mu);
+        c.lineTo(mx+88*mu,my+40*mu);
+        c.quadraticCurveTo(mx+88*mu,my+56*mu,mx+72*mu,my+56*mu);
+        c.lineTo(mx+38*mu,my+56*mu);
+        c.stroke();
+        c.beginPath(); c.moveTo(mx+56*mu,my+62*mu); c.lineTo(mx+86*mu,my+92*mu); c.stroke();
+        c.restore(); };
+      monoR(.6785*W, ry-9*s, 0.17*s, 2*s, rgb(238,240,244));
+      textSpaced(d,.699*W,ry+1*s,F.barlow,6,ink,'Ronald',0.01);
+      batToggle(d,.735*W,ry,8*s,true);
+      textSpaced(d,.760*W,ry-8*s,F.barlow,5.5,inkF,'ON',0.02);
+      textSpaced(d,.760*W,ry+9*s,F.barlow,5.5,inkF,'OFF',0.02);
+      textSpaced(d,.735*W,botY,F.barlow,6.5,ink,'POWER',0.02);
+      // ── tiras de ALUMINIO + rejilla hasta abajo (como el real) ──
+      const gx=W*.062, gw=W*.876;
+      const strip=(yy)=>{ rr(c,gx,yy,gw,H*.020,4*s);
+        const sg2=c.createLinearGradient(0,yy,0,yy+H*.020);
+        sg2.addColorStop(0,rgb(240,242,246)); sg2.addColorStop(.5,rgb(170,173,178)); sg2.addColorStop(1,rgb(216,219,224));
+        c.fillStyle=sg2; c.fill(); c.strokeStyle=rgb(58,60,64); c.lineWidth=0.8*s; c.stroke(); };
+      const gy=H*.400, gh=H*.435;
+      strip(H*.362); strip(H*.848);
+      rr(c,gx,gy-8*s,gw,gh+16*s,3*s); c.fillStyle=rgb(8,8,9); c.fill();
+      rr(c,gx+3*s,gy,gw-6*s,gh,3*s); c.fillStyle=rgb(13,13,14); c.fill();
+      c.save(); rr(c,gx+3*s,gy,gw-6*s,gh,3*s); c.clip();
+      c.strokeStyle='rgba(214,202,164,0.32)'; c.lineWidth=1;
+      for(let xx=gx;xx<gx+gw;xx+=6.5*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
+      for(let yy=gy;yy<gy+gh;yy+=6.5*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
+      c.strokeStyle='rgba(0,0,0,0.55)'; c.lineWidth=1.5*s;
+      for(let xx=gx+3.2*s;xx<gx+gw;xx+=6.5*s){ c.beginPath(); c.moveTo(xx,gy); c.lineTo(xx,gy+gh); c.stroke(); }
+      for(let yy=gy+3.2*s;yy<gy+gh;yy+=6.5*s){ c.beginPath(); c.moveTo(gx,yy); c.lineTo(gx+gw,yy); c.stroke(); }
+      const sheen=c.createRadialGradient(gx+gw*.5,gy+gh*.45,gh*.3,gx+gw*.5,gy+gh*.5,gw*.55);
+      sheen.addColorStop(0,'rgba(255,255,255,0.05)'); sheen.addColorStop(1,'rgba(0,0,0,0.30)');
       c.fillStyle=sheen; c.fillRect(gx,gy,gw,gh);
       c.restore();
-      // placa Ronald grande (monograma + nombre, como la foto)
-      const bpx=gx+gw*.025, bpy=gy+gh*.24, bpw=W*.150, bph=gh*.52;
-      rr(c,bpx,bpy,bpw,bph,5*s); c.fillStyle=rgb(8,8,9); c.fill();
-      rr(c,bpx,bpy,bpw,bph,5*s); c.strokeStyle=rgb(215,217,222); c.lineWidth=2*s; c.stroke();
-      rr(c,bpx+4*s,bpy+4*s,bpw-8*s,bph-8*s,3.5*s); c.strokeStyle='rgba(215,217,222,0.4)'; c.lineWidth=0.9*s; c.stroke();
+      // placa Ronald (monograma de cinta + nombre, como la foto)
+      const bpw=W*.125, bph=gh*.72, bpx=gx+gw*.030, bpy=gy+gh*.14;
+      rr(c,bpx,bpy,bpw,bph,4*s); c.fillStyle=rgb(8,8,9); c.fill();
+      rr(c,bpx,bpy,bpw,bph,4*s); c.strokeStyle=rgb(220,222,227); c.lineWidth=2*s; c.stroke();
+      monoR(bpx+bpw*.20, bpy+bph*.08, bpw*.006, 7*s, rgb(240,242,246));
       c.save(); c.textAlign='center'; c.textBaseline='middle';
-      const bx=bpx+bpw/2;
-      c.font=`800 ${Math.round(38*s)}px ${F.bebas}`; c.fillStyle=rgb(240,242,246);
-      c.fillText('R2', bx, bpy+bph*.38);
-      c.font=`700 ${Math.round(16*s)}px ${F.barlow}`;
-      c.fillText('Ronald', bx, bpy+bph*.80); c.restore();
-      // ── tachas + esquineras envolventes ──
+      c.font=`700 ${Math.round(19*s)}px ${F.barlow}`; c.fillStyle=rgb(240,242,246);
+      c.fillText('Ronald', bpx+bpw/2, bpy+bph*.84); c.restore();
+      // ── tachas + esquineras ──
       const stud=(x,y)=>{ const g=c.createRadialGradient(x-1.5*s,y-1.5*s,0.5*s,x,y,4*s);
         g.addColorStop(0,rgb(150,132,104)); g.addColorStop(1,rgb(52,44,34));
         c.beginPath(); c.arc(x,y,4*s,0,7); c.fillStyle=g; c.fill();
         c.strokeStyle=rgb(20,16,12); c.lineWidth=0.7*s; c.stroke(); };
-      for(let i=0;i<16;i++){ const xx=W*(.075+.85*i/15); stud(xx,H*.045); stud(xx,H*.958); }
+      for(let i=0;i<16;i++){ const xx=W*(.075+.85*i/15); stud(xx,H*.045); stud(xx,H*.945); }
       for(let i=0;i<4;i++){ const yy=H*(.20+.60*i/3); stud(W*.020,yy); stud(W*.980,yy); }
       const corner=(cxx,cyy,dx,dy)=>{ const kw=W*.045, kh=H*.16;
         rr(c, dx>0?cxx:cxx-kw, dy>0?cyy:cyy-kh, kw, kh, 6*s);
@@ -8711,7 +8714,7 @@
     boxac30:1.30, bendersupernova22:1.45, dualrect:1.72, dsl100:1.45, plexi:1.75,
     marstenvs100:1.45, marstenjcm800:1.60, marstenjtm45:1.55, marstenbluesbreaker:1.60, marstenmajor:1.55, deezelvh4:1.45, raneyironheart:1.45,
     marstendsl15:1.60, marstenjvm410:1.60, marstensilverjubilee:1.62, aor50:1.38, jc90:1.15, engelfireball:1.45,
-    polystoneminibrute:1.28, ronaldjc120:1.22, tw40:1.45, benderdeluxe:1.45, tw26:1.45, superdrive45:1.45,
+    polystoneminibrute:1.28, ronaldjc120:1.60, tw40:1.45, benderdeluxe:1.45, tw26:1.45, superdrive45:1.45,
     markiii:1.80, markii:1.80, unparalleldc30:1.78, unparallelchieftain:1.75,
     mrymaz38:1.45, mryems:1.45, citrusor100:1.60, citrusor50:1.60, citrusad50:1.45,
     citrusjimmybean:1.58, multiversal610:1.45,
