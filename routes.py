@@ -2061,6 +2061,12 @@ def _pick_a2_grid_capture(rs_gear: str, knobs: dict | None,
     cuando falta (resoluciones genéricas sin tono) se usa `rs_gain` para el
     eje V y noon para el resto. Devuelve {"file": "amps/<subdir>/<name>.nam"}
     o None (sin grilla para el gear / pack no instalado)."""
+    # DESACTIVADO por defecto (2026-07-25): tras el A/B el user decidió usar
+    # los packs A2 como REFERENCIAS de calibración para nuestros sims (más
+    # flexibles), no como el amp de juego — el snap por grilla queda detrás
+    # de este setting para experimentos/Fase 2.
+    if not _load_settings().get("use_a2_capture_grids", False):
+        return None
     entry = (_load_a2_grids() or {}).get(rs_gear)
     if not entry or _config_dir is None:
         return None
