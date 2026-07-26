@@ -20,6 +20,24 @@
 // Schematic: amps/Marshall JVM410/Marshall_jvm410_sch.pdf (FRONT PANEL 1 tone
 // stacks B220k/A1M/B22k + 470p/22n/22n; SHT2 4x EL34; Presence VR326 / Resonance VR305).
 //
+// RECALIBRADO 2026-07-26 contra el pack A2 del JVM410H real (83 caps APP-JVM,
+// 4 canales x modos x 8 pasos; 39 refs en test logic/jvm410_a2/; paso N ~ Gain
+// N/8, EQ noon asumido, Master 0.6). Hallazgos: el drive del CLEAN estaba ~4x
+// timido (el Orange-II real ya trae el pelo de nuestro gain max viejo) y el
+// clean real CRUNCHEA al fondo; los canales de drive eran gordos abajo y
+// huecos en 800-2k; la voz DEBE vivir POST-power porque vR/PI re-saturan y
+// lavan todo lo pre-stack (por eso el stack/trims pre-vR no movian el
+// espectro); red = MAS gain conservando lows (no "mas apretado"). Bloques
+// nuevos: cp12/23/34/R (blocking real), loadLowTrim/loadMidFill globales,
+// chLowTrim post-power por canal (gain/mode-dependiente), od2MidCut, brights
+// por canal, curvas de drive re-escaladas, makeup por canal re-medido a -16.
+// Resultado: bandas <=+-2.5 tipico (peor +-3.5 en OD2-Red 250-800), coh
+// mid/top +-0.10. RESIDUALES: coh 80-800 +0.15..+0.23 en ODs/Reds = piso de
+// RUIDO de las refs (hum/hiss del amp real que el A2 reproduce; silencio de
+// la ref -35 dBFS vs -42 nuestro — no perseguir), crest +1.2..+2.8 en
+// clean/crunch medios (master/compresion de captura desconocidos), Reds
+// todavia ~+0.15 mas limpios que la ref.
+//
 #include "../../_shared/tube_stage.hpp"
 #include <cmath>
 
@@ -48,7 +66,8 @@ struct Jvm410Core {
     float sr = 96000.0f;
     rbtube::HP1 inCoupling;
     rbtube::TubeStage v1, v2, v3, v4, vR;
-    Biquad brightShelf, presenceShelf, resoShelf, outTilt;
+    rbtube::CouplingCapGridLeak cp12, cp23, cp34, cpR;   // blocking real entre etapas (la mugre LF que faltaba vs el pack A2)
+    Biquad brightShelf, presenceShelf, resoShelf, outTilt, loadLowTrim, loadMidFill, chLowTrim, od2MidCut;
     Biquad cabHP, cabLowShelf, cabPresence, cabTopRoll;     // fallback 4x12
     rbtube::ToneStackYeh tone;
     rbtube::PhaseInverterLTP12AT7 pi;
@@ -65,7 +84,8 @@ struct Jvm410Core {
 
     void setSampleRate(float s){ sr=s; recalc(); reset(); }
     void reset(){ inCoupling.reset(); v1.reset();v2.reset();v3.reset();v4.reset();vR.reset();
-        brightShelf.reset();presenceShelf.reset();resoShelf.reset();outTilt.reset();
+        cp12.reset();cp23.reset();cp34.reset();cpR.reset();
+        brightShelf.reset();presenceShelf.reset();resoShelf.reset();outTilt.reset();loadLowTrim.reset();loadMidFill.reset();chLowTrim.reset();od2MidCut.reset();
         cabHP.reset();cabLowShelf.reset();cabPresence.reset();cabTopRoll.reset();
         tone.reset(); pi.reset(); power.reset(); otVoice.reset(); }
 
@@ -73,13 +93,17 @@ struct Jvm410Core {
         // Per-channel input HP (OD2 tightest, Clean fullest) + the green/orange/red
         // mode tightens the lows as it climbs (the real JVM red modes are tighter/
         // more focused) — makes the mode audible even when the channel is saturated.
-        const float hpBase = ch==3 ? 120.0f : ch==0 ? 55.0f : 105.0f;
-        inCoupling.set(sr, hpBase + 35.0f * mode);
+        const float hpBase = ch==3 ? 62.0f : ch==0 ? 45.0f : 55.0f;
+        inCoupling.set(sr, hpBase + 6.0f * mode);    // red = MAS GAIN, no menos graves (las refs Red conservan los lows)
         v1.set(sr, 1, 250.0f, 40.0f, 25.0f, 1800.0f);   // V1A input
         v2.set(sr, 1, 250.0f, 40.0f, 22.0f, 2700.0f);   // gain (colder = crunch)
         v3.set(sr, 1, 250.0f, 40.0f, 30.0f, 1500.0f);   // OD cascade 2
         v4.set(sr, 1, 250.0f, 40.0f, 33.0f, 820.0f);    // OD2 cascade 3 (cold -> the lead bite)
         vR.set(sr, 1, 250.0f, 40.0f, 55.0f, 1500.0f);   // recovery
+        cp12.set(sr, 1.0e6f, 22.0e-9f, 470.0e3f, 0.55f, 0.40f, 1.0f);
+        cp23.set(sr, 1.0e6f, 22.0e-9f, 470.0e3f, 0.55f, 0.40f, 1.0f);
+        cp34.set(sr, 1.0e6f, 22.0e-9f, 470.0e3f, 0.55f, 0.40f, 1.0f);
+        cpR.set(sr, 1.0e6f, 22.0e-9f, 470.0e3f, 0.55f, 0.40f, 1.0f);
 
         const float g  = rbtube::PotTaper::audio(pGain, 1.30f);
         const float m  = mode;                            // 0 green / 0.5 orange / 1 red
@@ -89,13 +113,13 @@ struct Jvm410Core {
         switch (ch) {
             case 0: // CLEAN — gentle, stays clean even cranked; mode adds a little edge
                 useV2=true; useV3=false; useV4=false;
-                gDrive  = 0.50f + (1.6f + 1.2f*m) * g;
+                gDrive  = 2.30f + (3.5f + 6.5f*m) * g;   // el clean real Orange-II ya trae el pelo de nuestro gain MAX viejo (fit A2)
                 v3Drive = 1.0f; v4Drive = 1.0f;
-                vRDrive = 1.0f + 1.2f * g;
+                vRDrive = 1.0f + 2.2f * g;
                 break;
             case 1: // CRUNCH — JCM800-style 2-stage
                 useV2=true; useV3=false; useV4=false;
-                gDrive  = 0.45f + (7.0f + 3.0f*m) * g;
+                gDrive  = 1.00f + (6.5f + 6.5f*m) * g;
                 v3Drive = 1.0f; v4Drive = 1.0f;
                 vRDrive = 1.0f + (4.5f + 1.5f*m) * g;
                 break;
@@ -104,18 +128,22 @@ struct Jvm410Core {
                 gDrive  = 0.45f + (8.0f + 3.0f*m) * g;
                 v3Drive = 1.0f + (4.0f + 2.0f*m) * g;
                 v4Drive = 1.0f;
-                vRDrive = 1.0f + (7.0f + 2.0f*m) * g;
+                vRDrive = 1.0f + (5.0f + 2.0f*m) * g;
                 break;
             default: // OD2 — +2 cascade (liquid high-gain)
                 useV2=true; useV3=true; useV4=true;
                 gDrive  = 0.45f + (9.0f + 3.0f*m) * g;
                 v3Drive = 1.0f + (5.0f + 2.0f*m) * g;
                 v4Drive = 1.0f + (3.0f + 2.0f*m) * g;
-                vRDrive = 1.0f + (9.0f + 2.0f*m) * g;
+                vRDrive = 1.0f + (6.5f + 2.0f*m) * g;
                 break;
         }
         // bright cap across the gain pot (eases as gain rises); Clean is the brightest
-        brightShelf.highShelf(sr, 2000.0f, (ch==0 ? 5.0f : 4.0f) * (1.0f - pGain));
+        brightShelf.highShelf(sr, 2000.0f, (ch==0 ? 8.0f : 6.0f) * (1.0f - pGain));
+        // Los canales de drive reales son mas MAGROS abajo que nuestra cascada
+        // (acoples interstage): trim gain-dependiente (fit vs pack A2).
+        const float trimDepth = (ch==1 ? (8.0f - 5.0f*g) : ch==2 ? (6.5f - 3.0f*g) : (5.5f - 3.0f*g)) - 2.2f*m;   // los modos red conservan lows
+        chLowTrim.lowShelf(sr, 550.0f, ch==0 ? 0.0f : -trimDepth);
 
         // Marshall TMB tone stack (Yeh) — shared topology across the four channels.
         tone.setComponents(220e3, 1e6, 22e3, 33e3, 470e-12, 22e-9, 22e-9);
@@ -126,10 +154,13 @@ struct Jvm410Core {
         piDrive = 6.0f;
         pi.setFenderAB763(sr, 1.0f, 1.0f);
         const float vol = rbtube::PotTaper::audio(pMaster, 1.15f) * (0.7f + 0.6f*pVol);
-        power.set(sr, 0.5f + 2.4f*vol, -36.0f, 0.06f, 30.0f, 11000.0f);
+        power.set(sr, 0.5f + 2.4f*vol, -36.0f, 0.12f, 30.0f, 11000.0f);
         power.out = 0.011f;
         otVoice.set(sr, 16000.0f);
         outTilt.highShelf(sr, 2600.0f, 9.0f);
+        loadLowTrim.lowShelf(sr, 150.0f, -3.6f);        // el real es mas magro abajo (fit A2, todas las refs)
+        loadMidFill.peak(sr, 1300.0f, 2.5f, 0.8f);      // 800-2k que faltaba
+        od2MidCut.peak(sr, 380.0f, ch==3 ? -2.2f : 0.0f, 0.9f);
 
         // Fallback 4x12 (CabSim; host bypasses with an external IR).
         cabHP.highpass(sr, 80.0f, 0.70f);
@@ -140,7 +171,7 @@ struct Jvm410Core {
         // Loudness makeup: per-channel base, decreasing with Gain so the knob adds
         // dirt not level; ~-16 dBFS at the operating point. Clean is intrinsically
         // quiet (little gain) -> a bigger base; OD2 the smallest.
-        const float mkBase = ch==0 ? 11.5f : ch==1 ? 4.5f : ch==2 ? 2.0f : 1.5f;
+        const float mkBase = ch==0 ? 5.8f : ch==1 ? 6.0f : ch==2 ? 3.7f : 3.3f;   // re-medido al punto de operacion (~-16 dBFS)
         outLevel = std::pow(10.0f, 0.05f * (mkBase - 5.0f * pGain));
     }
 
@@ -148,16 +179,20 @@ struct Jvm410Core {
         x = inCoupling.process(x);
         float y = v1.process(x);
         y = brightShelf.process(y);
-        if (useV2) y = v2.process(y * gDrive);
-        if (useV3) y = v3.process(y * v3Drive);
-        if (useV4) y = v4.process(y * v4Drive);
+        if (useV2) y = v2.process(cp12.process(y, gDrive));
+        if (useV3) y = v3.process(cp23.process(y, v3Drive));
+        if (useV4) y = v4.process(cp34.process(y, v4Drive));
         y = tone.process(y);
         y = presenceShelf.process(y);
-        y = vR.process(y * vRDrive);
+        y = vR.process(cpR.process(y, vRDrive));
         y = pi.process(y * piDrive);
         y = power.process(y);
         y = otVoice.process(y);
         y = outTilt.process(y);
+        y = loadLowTrim.process(y);
+        y = loadMidFill.process(y);
+        y = chLowTrim.process(y);   // POST-power: despues del ultimo clip (vR/PI re-saturan y lavan todo lo pre-stack)
+        y = od2MidCut.process(y);
         y = resoShelf.process(y);
         if (cabOn) { y = cabHP.process(y); y = cabLowShelf.process(y); y = cabPresence.process(y); y = cabTopRoll.process(y); }
         return y * outLevel;
