@@ -1,15 +1,28 @@
 #ifndef JTM45_CORE_H
 #define JTM45_CORE_H
 //
-// Jtm45Core — Marshall JTM45, circuit-real on the shared
-// tube_stage.hpp framework with CONTROLLED gain staging (clean at low Loudness ->
-// roar at high). Same proven pattern as Jcm800Core / the bass amps; rewritten from
-// the over-gained cascade that saturated every signal to ~100% THD.
+// Jtm45Core — Marshall JTM45, circuit-real (familia Bassman 5F6-A), reescrito
+// con la receta probada del Jcm800Core 2203:
 //
-//   IN -> coupling -> Bright + Normal 12AX7 channels (Loudness I / II, jumpered)
-//   -> JTM45 FMV tone stack (Yeh, slope 56k) -> presence -> driven recovery 12AX7 ->
-//   12AX7 LTP PI -> 2x 5881 (~KT66; non-master: the Loudness knobs drive the whole amp) -> OT roll.
-//   Runs 2x oversampled.
+//   IN -> V1 (dos mitades 12AX7: Bright con bright-cap, Normal) ->
+//   Loudness I/II (pots con grid blocking, mezcla jumpered) ->
+//   V2a 12AX7 (etapa de ganancia post-mezcla) ->
+//   V2b cathode follower (acoplado directo; squash de conduccion de grilla) ->
+//   stack FMV JTM45 (Treble 250k/270pF, Bass 1M, Mid 25k, slope 56k) DESPUES
+//   de todo el clipping del pre (los graves cabalgan el clip = crest real) ->
+//   presence (NFB del power, boost-only) -> PI LTP ECC83 -> 2x KT66 (~5881)
+//   con sag GZ34 (rectificadora a valvula, no silicio) -> OT.
+//
+// CALIBRADO contra la grilla A2 del JTM45 real (test logic/jtm45_a2/, capturas
+// contra carga reactiva del mismo rig que el AC30/JCM800): BALANCED V3/V5/V8
+// x P2/P5/P8 (EQ noon asumido para BALANCED), CRANKED V10 y esquinas de EQ
+// (BRIGHT/FAT/LOCUT/MIDS/SCOOP con mapeos asumidos de sus etiquetas).
+// Resultado: coherencias +-0.10, crest +-0.5 en V3-V5 y presence sweep,
+// bandas +-2.5, niveles +-0.7. RESIDUALES documentados: crest -2.1/-2.8 a
+// V8/V10 (nuestro power aprieta transitorios mas que el real, misma clase
+// que el JCM800/JC120; bias y sag no lo mueven), top 5-10k -2..-3.8 (piso
+// de fizz/hiss de las capturas, no se persigue), sub +3 a V3, LOCUT +3.6
+// de graves (su LOCUT probablemente es Bass=0 exacto).
 //
 #include "../../_shared/tube_stage.hpp"
 #include <cmath>
@@ -23,6 +36,8 @@ struct Biquad {
     float b0=1,b1=0,b2=0,a1=0,a2=0,x1=0,x2=0,y1=0,y2=0;
     inline float process(float x){ float y=b0*x+b1*x1+b2*x2-a1*y1-a2*y2; x2=x1;x1=x;y2=y1;y1=rbtube::dn(y); return y; }
     void reset(){ x1=x2=y1=y2=0; }
+    void peak(float sr,float f,float dB,float Q){ if(f>sr*0.49f)f=sr*0.49f; float A=std::pow(10.f,dB/40.f),w=2*kPi*f/sr,c=std::cos(w),al=std::sin(w)/(2*Q);
+        float a0=1+al/A; b0=(1+al*A)/a0; b1=-2*c/a0; b2=(1-al*A)/a0; a1=-2*c/a0; a2=(1-al/A)/a0; }
     void highShelf(float sr,float f,float dB){ if(f>sr*0.49f)f=sr*0.49f; float A=std::pow(10.f,dB/40.f),w=2*kPi*f/sr,c=std::cos(w),s=std::sin(w),al=s*0.5f*1.4142135f,rA=std::sqrt(A),t=2*rA*al;
         float a0=(A+1)-(A-1)*c+t; b0=A*((A+1)+(A-1)*c+t)/a0; b1=-2*A*((A-1)+(A+1)*c)/a0; b2=A*((A+1)+(A-1)*c-t)/a0; a1=2*((A-1)-(A+1)*c)/a0; a2=((A+1)-(A-1)*c-t)/a0; }
 };
@@ -30,15 +45,16 @@ struct Biquad {
 struct Jtm45Core {
     float sr = 96000.0f;
     rbtube::HP1 inCoupling;
-    rbtube::TubeStage vBright, vNormal, v3;
-    Biquad brightShelf, presenceShelf, outTilt;
+    rbtube::TubeStage vBright, vNormal, v2a;     // V1 (dos mitades) + V2a post-mezcla
+    rbtube::CouplingCapGridLeak cpBright, cpNormal, cp2;
+    Biquad brightShelf, presenceShelf, outTilt, loadBassRes, loadMid;
     rbtube::ToneStackYeh tone;
-    rbtube::PhaseInverterLTP12AT7 pi;
-    rbtube::PowerAmp5881 power;
+    rbtube::PhaseInverterLTP12AX7 pi;            // ECC83 real (set() generico; setMarshall gatea)
+    rbtube::PowerAmp5881 power;                  // ~KT66
     rbtube::LP1 otVoice;
 
     float pPres=.5f,pBass=.5f,pMid=.55f,pTreble=.62f,pL1=.62f,pL2=.0f,pInput=.5f;
-    float gB=1.f,gN=1.f,v3Drive=1.f,piDrive=6.f,outLevel=1.f;
+    float gB=1.f,gN=1.f,cfDrive=1.6f,piDrive=4.f,outLevel=1.f;
 
     void setSampleRate(float s){ sr=s; recalc(); reset(); }
     void setPresence(float v){ pPres=clamp01(v); recalc(); }
@@ -49,54 +65,74 @@ struct Jtm45Core {
     void setLoudness2(float v){ pL2=clamp01(v); recalc(); }
     void setInput(float v){ pInput=clamp01(v); recalc(); }
 
-    void reset(){ inCoupling.reset(); vBright.reset(); vNormal.reset(); v3.reset();
-        brightShelf.reset(); tone.reset(); presenceShelf.reset(); outTilt.reset(); pi.reset(); power.reset(); otVoice.reset(); }
+    void reset(){ inCoupling.reset(); vBright.reset(); vNormal.reset(); v2a.reset();
+        cpBright.reset(); cpNormal.reset(); cp2.reset();
+        brightShelf.reset(); tone.reset(); presenceShelf.reset(); outTilt.reset();
+        loadBassRes.reset(); loadMid.reset(); pi.reset(); power.reset(); otVoice.reset(); }
+
+    // V2b cathode follower acoplado directo (mismo modelo que el Jcm800Core).
+    static inline float cfSquash(float x){
+        const float kneeP = 1.05f, sP = 0.55f;
+        const float kneeN = 1.70f, sN = 0.40f;
+        if (x >  kneeP) x =  kneeP + sP * std::tanh((x - kneeP) / sP);
+        if (x < -kneeN) x = -(kneeN + sN * std::tanh((-x - kneeN) / sN));
+        return x;
+    }
 
     void recalc(){
-        inCoupling.set(sr, 90.0f);   // tighten lows to the amp-only reference (was 30 = too full)
-        vBright.set(sr, 1, 250.0f, 40.0f, 25.0f, 1500.0f);
-        vNormal.set(sr, 1, 250.0f, 40.0f, 40.0f, 1500.0f);
-        v3.set(sr, 1, 250.0f, 40.0f, 55.0f, 1500.0f);
+        inCoupling.set(sr, 44.0f);                       // acople real (el 90 Hz anterior era fit a la ref sin carga)
+        vBright.set(sr, 1, 260.0f, 40.0f, 25.0f, 820.0f);   // V1a bright: 820R catodo compartido 5F6A
+        vNormal.set(sr, 1, 260.0f, 40.0f, 25.0f, 820.0f);   // V1b normal
+        v2a.set(sr, 1, 260.0f, 40.0f, 24.0f, 1500.0f);      // V2a post-mezcla (1k5 bypass total)
 
-        // Loudness knobs = the drive (non-master). Span raised + a driven recovery so the JTM45
-        // actually breaks up when cranked (ref crest ~6.3) — was far too clean (crest ~12).
-        gB = 0.30f + 9.0f * rbtube::PotTaper::audio(pL1, 1.30f);
-        gN = 0.30f + 9.0f * rbtube::PotTaper::audio(pL2, 1.30f);
+        // Loudness = drive del canal (no-master). Floor moderado: el V3 real de la
+        // grilla ya viene con algo de pelo; el barrido llega al roar en V8-V10.
+        gB = 0.55f + 27.5f * rbtube::PotTaper::audio(pL1, 0.85f);
+        gN = 0.55f + 27.5f * rbtube::PotTaper::audio(pL2, 0.85f);
+        cpBright.set(sr, 1.0e6f, 22.0e-9f, 270.0e3f, 0.55f, 0.40f, 1.0f);
+        cpNormal.set(sr, 1.0e6f, 22.0e-9f, 270.0e3f, 0.55f, 0.40f, 1.0f);
+        cp2.set(sr, 1.0e6f, 22.0e-9f, 10.0e3f, 0.80f, 0.35f, 0.8f);
+        // Bright cap del Loudness I (100pF): fuerte a volumen bajo, desaparece arriba.
+        brightShelf.highShelf(sr, 1500.0f, 1.5f + 5.5f * (1.0f - rbtube::PotTaper::audio(pL1, 0.9f)));
+
         const float drv0 = (pL1 > pL2 ? pL1 : pL2);
-        v3Drive = 1.0f + 5.0f * rbtube::PotTaper::audio(drv0, 1.30f);
-        brightShelf.highShelf(sr, 2200.0f, 5.0f);
+        cfDrive = 0.85f + 1.15f * rbtube::PotTaper::audio(drv0, 0.9f);
 
-        // JTM45 Bassman-derived FMV tone stack (Yeh), circuit-real: Treble 250k/270pF, Bass 1M/.02,
-        // Mid 25k/.02, slope 56k (NOT the Plexi's 33k — the 56k slope is the JTM45's mid voicing).
+        // Stack FMV JTM45 (Bassman-derived): slope 56k = el mid-voicing del JTM45.
         tone.setComponents(250e3, 1e6, 25e3, 56e3, 270e-12, 22e-9, 22e-9);
         tone.update(sr, pTreble, pMid, pBass);
-        presenceShelf.highShelf(sr, 3000.0f, (pPres-0.5f)*10.0f);
+        presenceShelf.highShelf(sr, 2400.0f, 13.0f * pPres);   // NFB presence: boost-only (pot 25k)
 
-        piDrive = 6.0f;
-        pi.setFenderAB763(sr, 1.0f, 1.0f);
-        power.set(sr, 1.6f, -38.0f, 0.06f, 30.0f, 11000.0f);   // 2x 5881 (~KT66), non-master
-        power.out = 0.011f;
-        otVoice.set(sr, 14000.0f);                  // opened from 9k for the amp-only bright top
-        outTilt.highShelf(sr, 2600.0f, 5.0f);       // presence/air tilt to match the bright reference
+        piDrive = 4.4f;
+        pi.set(sr, 1.0f, 1.0f);
+        // GZ34 real en el JTM45 -> sag presente (no el 0.06 seco de antes).
+        const float drvA = rbtube::PotTaper::audio(drv0, 0.85f);
+        power.set(sr, 0.9f + 2.9f * drvA, -38.0f, 0.045f, 46.0f, 15000.0f);
+        power.out = 0.0135f;
+        otVoice.set(sr, 16500.0f);
+        outTilt.highShelf(sr, 2800.0f, 6.2f);                 // aire contra carga (fit vs grilla A2)
+        loadMid.peak(sr, 1300.0f, 1.6f, 0.9f);                // 800-2k quedaba -1.2..-2.1 vs la grilla
+        loadBassRes.peak(sr, 100.0f, 0.3f + 2.0f * drvA, 0.9f); // resonancia OT+carga (crece con drive; a V3 el sub sobraba)
 
-        const float drv = drv0;
-        outLevel = std::pow(10.0f, 0.05f * (15.0f - 16.0f * drv + 6.0f * drv * drv));
+        outLevel = std::pow(10.0f, 0.05f * (-0.33f - 6.93f * drv0 - 1.46f * drv0 * drv0));
     }
 
     inline float process(float x){
         x = inCoupling.process(x);
-        const float jb = (pInput <= 0.5f) ? 1.0f : (1.0f - (pInput-0.5f)*2.0f);   // bright weight
-        const float jn = (pInput >= 0.5f) ? 1.0f : (pInput*2.0f);                  // normal weight
-        const float b = vBright.process(brightShelf.process(x) * gB);
-        const float n = vNormal.process(x * gN);
-        float y = 0.6f * (jb*b + jn*n);
-        y = tone.process(y);
+        const float jb = (pInput <= 0.5f) ? 1.0f : (1.0f - (pInput-0.5f)*2.0f);   // peso bright
+        const float jn = (pInput >= 0.5f) ? 1.0f : (pInput*2.0f);                  // peso normal
+        const float b = cpBright.process(vBright.process(brightShelf.process(x)), gB);
+        const float n = cpNormal.process(vNormal.process(x), gN);
+        float y = v2a.process(0.55f * (jb*b + jn*n));     // V2a post-mezcla
+        y = cfSquash(cp2.process(y, cfDrive));            // V2b cathode follower
+        y = tone.process(y);                              // stack DESPUES del clipping del pre
         y = presenceShelf.process(y);
-        y = v3.process(y * v3Drive);
-        y = pi.process(y * piDrive);
-        y = power.process(y);
+        y = pi.process(y * piDrive);                      // LTP ECC83
+        y = power.process(y);                             // KT66 + sag GZ34
         y = otVoice.process(y);
         y = outTilt.process(y);
+        y = loadMid.process(y);
+        y = loadBassRes.process(y);
         return y * outLevel;
     }
 };
