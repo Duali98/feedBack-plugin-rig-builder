@@ -575,6 +575,42 @@
       c.lineTo(cx+R*0.80*Math.cos(a)+1*s,cy+R*0.80*Math.sin(a)+1*s); c.stroke(); c.lineCap='butt';
       return;
     }
+    if (style==='jtmsilver') {
+      // JTM45 MkII: perilla skirtless de ALUMINIO hilado (plateada) con linea
+      // indicadora oscura, como las del panel dorado de la referencia.
+      c.save(); c.globalAlpha=0.30; c.beginPath();
+      c.ellipse(cx+1.2*s,cy+2*s,R*1.06,R*1.00,0,0,7); c.fillStyle=rgb(0,0,0); c.fill(); c.restore();
+      // cuerpo de aluminio (borde levemente conico mas oscuro)
+      const bd=c.createRadialGradient(cx-R*0.32,cy-R*0.38,R*0.08,cx,cy,R*1.06);
+      bd.addColorStop(0,rgb(250,251,253)); bd.addColorStop(.55,rgb(202,205,210)); bd.addColorStop(1,rgb(126,129,135));
+      c.beginPath(); c.arc(cx,cy,R,0,7); c.fillStyle=bd; c.fill();
+      c.strokeStyle=rgb(84,87,92); c.lineWidth=1*s; c.stroke();
+      // moleteado fino del borde (gira con el valor)
+      c.lineWidth=1.2*s;
+      for(let i=0;i<40;i++){ const t=i/40*Math.PI*2+a;
+        c.strokeStyle=(i%2)?'rgba(0,0,0,0.20)':'rgba(255,255,255,0.35)';
+        c.beginPath();
+        c.moveTo(cx+R*0.88*Math.cos(t),cy+R*0.88*Math.sin(t));
+        c.lineTo(cx+R*0.99*Math.cos(t),cy+R*0.99*Math.sin(t)); c.stroke(); }
+      // tapa hilada con anillos concentricos del torneado
+      const tg3=c.createRadialGradient(cx-R*0.26,cy-R*0.30,R*0.05,cx,cy,R*0.84);
+      tg3.addColorStop(0,rgb(246,248,250)); tg3.addColorStop(.55,rgb(212,215,220)); tg3.addColorStop(1,rgb(158,161,167));
+      c.beginPath(); c.arc(cx,cy,R*0.84,0,7); c.fillStyle=tg3; c.fill();
+      c.strokeStyle=rgb(120,123,128); c.lineWidth=0.8*s; c.stroke();
+      for(let rr2=R*0.14; rr2<R*0.80; rr2+=R*0.085){
+        c.beginPath(); c.arc(cx,cy,rr2,0,7);
+        c.strokeStyle='rgba(96,99,104,0.22)'; c.lineWidth=0.7*s; c.stroke(); }
+      // destello diagonal del hilado
+      c.save(); c.beginPath(); c.arc(cx,cy,R*0.82,0,7); c.clip();
+      c.globalAlpha=0.32; c.beginPath();
+      c.moveTo(cx-R*0.7,cy+R*0.2); c.lineTo(cx-R*0.05,cy-R*0.85); c.lineTo(cx+R*0.25,cy-R*0.85); c.lineTo(cx-R*0.4,cy+R*0.2); c.closePath();
+      c.fillStyle=rgb(255,255,255); c.fill(); c.restore();
+      // linea indicadora oscura
+      c.beginPath(); c.moveTo(cx+R*0.14*Math.cos(a),cy+R*0.14*Math.sin(a));
+      c.lineTo(cx+R*0.80*Math.cos(a),cy+R*0.80*Math.sin(a));
+      c.lineCap='round'; c.strokeStyle=rgb(44,46,50); c.lineWidth=2.4*s; c.stroke(); c.lineCap='butt';
+      return;
+    }
     if (style==='jcsilver') {
       // Roland JC real: FALDA negra con marca blanca impresa, cuerpo negro de
       // dientes gruesos que gira y tapa de ALUMINIO hilado plateada.
@@ -6429,39 +6465,171 @@
     c.beginPath(); c.arc(jcx,jcy,5.5*s,0,7); c.fillStyle=jg; c.fill(); c.strokeStyle=goldLo; c.lineWidth=1.4*s; c.beginPath(); c.arc(jcx,jcy,8*s,0,7); c.stroke();
   }
 
-  // ── MARSTEN JTM45 (Marshall JTM45) — gold-panel head, jumper inputs, Loudness
-  //    1/2 (non-master, like the Plexi but 2xKT66/GZ34 ~30W). 0 Presence 1 Bass
-  //    2 Middle 3 Treble 4 Loudness1 5 Loudness2 + Input jumper(6).
+  // ── MARSTEN JTM45 (Marshall JTM45 MkII) — estructura 1:1 con la referencia:
+  //    tolex negro dominante, marco de piping dorado con linea horizontal bajo
+  //    el script crema, asa negra con herrajes dorados y el panel GOLD ANCHO
+  //    inset abajo (~.19-.88): MK II · MAINS/STANDBY cromados palanca abajo ·
+  //    INDICATOR rojo cuadrado · 6 perillas de ALUMINIO (PRESENCE BASS MIDDLE
+  //    TREBLE HIGH TREBLE NORMAL, con LOUDNESS 1/2 debajo de las dos ultimas)
+  //    con abanicos 0-10 · INPUTS 2x2 (fila top = canal High Treble, fila
+  //    bottom = Normal) · placa JTM/45 a la derecha.
+  //    ids: 0 Presence 1 Bass 2 Middle 3 Treble 4 Loudness1 5 Loudness2; cable
+  //    clickeable id 6 (High Treble -> jumpereado -> Normal).
   P.marstenjtm45 = { w:1560, h:600, ptr:rgb(244,242,236),
     knobs:[
-      {id:0,cx:.310,cy:.770,r:.020,style:'pointer',cap:[24,22,22]},
-      {id:1,cx:.385,cy:.770,r:.020,style:'pointer',cap:[24,22,22]},
-      {id:2,cx:.460,cy:.770,r:.020,style:'pointer',cap:[24,22,22]},
-      {id:3,cx:.535,cy:.770,r:.020,style:'pointer',cap:[24,22,22]},
-      {id:4,cx:.610,cy:.770,r:.020,style:'pointer',cap:[24,22,22]},
-      {id:5,cx:.685,cy:.770,r:.020,style:'pointer',cap:[24,22,22]} ],
-    sw3:[{id:6,cx:.857,cy:.788,hw:62,hh:42,hidden:true}],
-    draw(d,vals){ const {ctx:c,W,H,s}=d; const G=marstenGoldHead(d,'JTM 45');
-      const {gold,ink,inkF,py,ph,lblY,goldLo}=G;
-      const lbl=(cx,t,sz)=>textSpaced(d,cx*W,lblY,F.barlow,sz||10,ink,t,0.03);
-      lbl(.310,'PRESENCE',8); lbl(.385,'BASS'); lbl(.460,'MIDDLE'); lbl(.535,'TREBLE');
-      lbl(.610,'LOUDNESS 1',7.5); lbl(.685,'LOUDNESS 2',7.5);
-      marstenPowerBlock(d,G,0.085);
-      // INPUTS (2x2) + clickable jumper cable (id6)
-      const ix0=.825*W, ix1=.890*W, iy0=py+ph*.40, iy1=py+ph*.72;
-      const jack=(jx,jy)=>{ c.beginPath(); c.arc(jx,jy,8*s,0,7); c.fillStyle=rgb(16,14,14); c.fill();
-        c.strokeStyle=rgb(150,128,74); c.lineWidth=2*s; c.stroke(); c.beginPath(); c.arc(jx,jy,2.6*s,0,7); c.fillStyle=rgb(54,52,48); c.fill(); };
-      jack(ix0,iy0); jack(ix1,iy0); jack(ix0,iy1); jack(ix1,iy1);
-      textSpaced(d,(ix0+ix1)/2,lblY,F.barlow,8.5,ink,'INPUTS',0.04);
+      {id:0,cx:.385,cy:.755,r:.0165,style:'jtmsilver'},  // PRESENCE
+      {id:1,cx:.443,cy:.755,r:.0165,style:'jtmsilver'},  // BASS
+      {id:2,cx:.501,cy:.755,r:.0165,style:'jtmsilver'},  // MIDDLE
+      {id:3,cx:.559,cy:.755,r:.0165,style:'jtmsilver'},  // TREBLE
+      {id:4,cx:.617,cy:.755,r:.0165,style:'jtmsilver'},  // HIGH TREBLE (Loudness 1)
+      {id:5,cx:.675,cy:.755,r:.0165,style:'jtmsilver'} ],// NORMAL (Loudness 2)
+    sw3:[{id:6,cx:.769,cy:.752,hw:64,hh:50,hidden:true}], // cable High Treble/Both/Normal
+    draw(d,vals){ const {ctx:c,W,H,s}=d;
+      const gold=rgb(198,170,96), ink=rgb(52,40,22), inkF='rgba(52,40,22,0.62)',
+            cream=rgb(242,235,214);
+      // ── tolex levant negro con grano ──
+      const bgr=c.createLinearGradient(0,0,0,H); bgr.addColorStop(0,rgb(30,29,31)); bgr.addColorStop(0.45,rgb(22,21,23)); bgr.addColorStop(1,rgb(12,11,13));
+      c.fillStyle=bgr; c.fillRect(0,0,W,H);
+      c.save(); c.beginPath(); c.rect(0,0,W,H); c.clip(); c.lineWidth=1;
+      c.strokeStyle='rgba(255,255,255,0.020)';
+      for(let x=-H;x<W;x+=6*s){ c.beginPath(); c.moveTo(x,0); c.lineTo(x+H,H); c.stroke(); }
+      c.strokeStyle='rgba(0,0,0,0.24)';
+      for(let x=-H;x<W;x+=6*s){ c.beginPath(); c.moveTo(x+3*s,0); c.lineTo(x+3*s-H,H); c.stroke(); }
+      for(let i=0;i<700;i++){ const hx2=Math.abs(Math.sin(i*127.1)*43758.5453)%1, hy2=Math.abs(Math.sin(i*311.7)*268.5453)%1;
+        c.fillStyle=(i%2)?'rgba(255,244,224,0.05)':'rgba(0,0,0,0.28)';
+        c.fillRect(hx2*W, hy2*H, 1.3*s, 1.3*s); }
+      c.restore();
+      const vg=c.createRadialGradient(W*.5,H*.44,H*.40,W*.5,H*.5,W*.62);
+      vg.addColorStop(0,'rgba(255,244,224,0.03)'); vg.addColorStop(1,'rgba(8,5,2,0.44)');
+      c.fillStyle=vg; c.fillRect(0,0,W,H);
+      // tira superior (tapa del cabezal)
+      const tg2=c.createLinearGradient(0,0,0,H*.045);
+      tg2.addColorStop(0,rgb(74,66,56)); tg2.addColorStop(.5,rgb(46,42,35)); tg2.addColorStop(1,rgb(31,28,23));
+      c.fillStyle=tg2; c.fillRect(0,0,W,H*.045);
+      c.strokeStyle='rgba(255,240,210,0.16)'; c.lineWidth=1.2*s;
+      c.beginPath(); c.moveTo(0,H*.045); c.lineTo(W,H*.045); c.stroke();
+      const bolt=(x,y,r)=>{ r=r||2.6*s; const g=c.createRadialGradient(x-r*0.3,y-r*0.3,r*0.15,x,y,r);
+        g.addColorStop(0,rgb(236,222,180)); g.addColorStop(1,rgb(124,102,54));
+        c.beginPath(); c.arc(x,y,r,0,7); c.fillStyle=g; c.fill(); c.strokeStyle=rgb(50,40,22); c.lineWidth=0.7*s; c.stroke(); };
+      // ── asa negra con herrajes dorados ──
+      const hax=.425*W, hbx=.575*W, hey=H*.052;
+      [hax,hbx].forEach(bx=>{ rr(c,bx-13*s,hey-8*s,26*s,16*s,3*s);
+        const mg=c.createLinearGradient(0,hey-8*s,0,hey+8*s); mg.addColorStop(0,rgb(226,198,128)); mg.addColorStop(.5,rgb(186,152,84)); mg.addColorStop(1,rgb(132,102,50));
+        c.fillStyle=mg; c.fill(); c.strokeStyle=rgb(60,46,22); c.lineWidth=0.9*s; c.stroke();
+        bolt(bx-7*s,hey,2*s); bolt(bx+7*s,hey,2*s); });
+      c.beginPath(); c.moveTo(hax+8*s,hey-3*s);
+      c.bezierCurveTo(.46*W,H*.008,.54*W,H*.008,hbx-8*s,hey-3*s);
+      c.lineWidth=11*s; c.lineCap='round'; c.strokeStyle=rgb(14,14,16); c.stroke();
+      c.lineWidth=3*s; c.strokeStyle='rgba(255,255,255,0.10)'; c.stroke(); c.lineCap='butt';
+      // ── marco de piping dorado + linea horizontal bajo el script ──
+      rr(c,W*.022,H*.075,W*.956,H*.860,16*s); c.strokeStyle=gold; c.lineWidth=2.6*s; c.stroke();
+      rr(c,W*.022,H*.075,W*.956,H*.860,16*s); c.strokeStyle='rgba(255,238,190,0.25)'; c.lineWidth=0.9*s; c.stroke();
+      c.beginPath(); c.moveTo(W*.032,H*.425); c.lineTo(W*.968,H*.425);
+      c.strokeStyle=gold; c.lineWidth=2.2*s; c.stroke();
+      // ── script "Marsten" crema con sombra ──
+      c.save(); c.textAlign='center'; c.textBaseline='middle';
+      setFont(d,F.ink,86);
+      c.fillStyle='rgba(0,0,0,0.55)'; c.fillText('Marsten',W*.5+2.5*s,H*.300+3.5*s);
+      c.lineWidth=4.5*s; c.lineJoin='round'; c.strokeStyle=rgb(96,80,44); c.strokeText('Marsten',W*.5,H*.300);
+      c.fillStyle=cream; c.fillText('Marsten',W*.5,H*.300); c.restore();
+      // ── panel GOLD ANCHO inset (mas ancho que el del JMP: MK II a JTM45) ──
+      const px=W*.190, pw=W*.690, py=H*.635, ph=H*.235;
+      rr(c,px-4*s,py-4*s,pw+8*s,ph+8*s,7*s); c.fillStyle=rgb(5,5,6); c.fill();     // recess
+      rr(c,px-4*s,py-4*s,pw+8*s,ph+8*s,7*s); c.strokeStyle=gold; c.lineWidth=1.8*s; c.stroke();
+      const pg=c.createLinearGradient(0,py,0,py+ph);
+      pg.addColorStop(0,rgb(230,204,140)); pg.addColorStop(.5,rgb(212,182,112)); pg.addColorStop(1,rgb(186,154,88));
+      rr(c,px,py,pw,ph,5*s); c.fillStyle=pg; c.fill();
+      c.save(); rr(c,px,py,pw,ph,5*s); c.clip();
+      c.strokeStyle='rgba(255,255,255,0.10)'; c.lineWidth=1;
+      for(let xx=px; xx<px+pw; xx+=2.4*s){ c.beginPath(); c.moveTo(xx,py); c.lineTo(xx,py+ph); c.stroke(); }
+      c.fillStyle='rgba(120,90,40,0.18)'; c.fillRect(px,py,pw,3*s);
+      for(const [gx2,gy2,gr2,al2] of [[.24,.25,.55,.10],[.58,.78,.6,.09],[.82,.30,.45,.08],[.08,.7,.4,.10]]){
+        const gg2=c.createRadialGradient(px+pw*gx2,py+ph*gy2,2*s,px+pw*gx2,py+ph*gy2,ph*gr2);
+        gg2.addColorStop(0,'rgba(96,72,34,'+al2+')'); gg2.addColorStop(1,'rgba(0,0,0,0)');
+        c.fillStyle=gg2; c.fillRect(px,py,pw,ph); }
+      c.fillStyle='rgba(70,50,20,0.15)'; c.fillRect(px,py+ph-4*s,pw,4*s);
+      c.restore();
+      rr(c,px,py,pw,ph,5*s); c.strokeStyle=rgb(130,104,52); c.lineWidth=1.2*s; c.stroke();
+      const topY=py+ph*.10, botY=py+ph*.88, cyP=py+ph*.51;
+      // ── MK II (borde izquierdo del panel, apilado) ──
+      textSpaced(d,.215*W,cyP-8*s,F.bebas,12,ink,'MK',0.10);
+      textSpaced(d,.215*W,cyP+8*s,F.bebas,12,ink,'II',0.16);
+      // ── toggles cromados MAINS / STANDBY (palanca ABAJO, como la foto) ──
+      const toggle=(x)=>{ c.beginPath(); c.arc(x,cyP,6.2*s,0,7);
+        const ng=c.createRadialGradient(x-2*s,cyP-2*s,1*s,x,cyP,6.2*s); ng.addColorStop(0,rgb(244,246,248)); ng.addColorStop(1,rgb(130,134,140));
+        c.fillStyle=ng; c.fill(); c.strokeStyle=rgb(70,60,36); c.lineWidth=0.9*s; c.stroke();
+        c.beginPath(); c.moveTo(x,cyP); c.lineTo(x,cyP+12*s);
+        c.lineWidth=3.4*s; c.lineCap='round'; c.strokeStyle=rgb(198,202,208); c.stroke(); c.lineCap='butt';
+        c.beginPath(); c.arc(x,cyP+12*s,2.6*s,0,7);
+        const bg2=c.createRadialGradient(x-1*s,cyP+11*s,0.5*s,x,cyP+12*s,2.6*s); bg2.addColorStop(0,rgb(250,252,254)); bg2.addColorStop(1,rgb(150,154,160));
+        c.fillStyle=bg2; c.fill(); };
+      toggle(.253*W); toggle(.291*W);
+      textSpaced(d,.253*W,topY,F.barlow,7,ink,'MAINS',0.03); textSpaced(d,.291*W,topY,F.barlow,7,ink,'STANDBY',0.02);
+      textSpaced(d,.253*W,botY,F.barlow,6.5,inkF,'ON',0.04); textSpaced(d,.291*W,botY,F.barlow,6.5,inkF,'ON',0.04);
+      // ── indicador ROJO cuadrado ──
+      const qx=.327*W, qy=cyP;
+      c.save(); c.globalAlpha=0.45; c.beginPath(); c.arc(qx,qy,10*s,0,7);
+      const qg=c.createRadialGradient(qx,qy,1.5*s,qx,qy,10*s); qg.addColorStop(0,'rgba(255,120,50,0.9)'); qg.addColorStop(1,'rgba(255,120,50,0)');
+      c.fillStyle=qg; c.fill(); c.restore();
+      rr(c,qx-5.5*s,qy-5.5*s,11*s,11*s,1.5*s); c.fillStyle=rgb(30,24,18); c.fill();
+      rr(c,qx-4.2*s,qy-4.2*s,8.4*s,8.4*s,1*s);
+      const rq=c.createLinearGradient(qx,qy-4*s,qx,qy+4*s); rq.addColorStop(0,rgb(255,170,90)); rq.addColorStop(.5,rgb(230,80,26)); rq.addColorStop(1,rgb(140,26,10));
+      c.fillStyle=rq; c.fill();
+      textSpaced(d,qx,botY,F.barlow,6.5,inkF,'INDICATOR',0.02);
+      // ── abanicos 0-10 (pares) + captions de las 6 perillas ──
+      const KR=.0165*W, ky=.755*H, kxs=[.385,.443,.501,.559,.617,.675];
+      const fan=(kx)=>{ c.save(); c.textAlign='center'; c.textBaseline='middle';
+        c.font=`700 ${Math.round(7.8*s)}px ${F.barlow}`; c.fillStyle=ink;
+        for(let n=0;n<=10;n+=2){ const aa=ang(n/10); const rr2=KR*1.50;
+          c.fillText(String(n), kx*W+rr2*Math.cos(aa), ky+rr2*Math.sin(aa)); }
+        c.restore(); };
+      kxs.forEach(fan);
+      textSpaced(d,.385*W,topY,F.barlow,7.5,ink,'PRESENCE',0.02);
+      textSpaced(d,.443*W,topY,F.barlow,7.5,ink,'BASS',0.03);
+      textSpaced(d,.501*W,topY,F.barlow,7.5,ink,'MIDDLE',0.02);
+      textSpaced(d,.559*W,topY,F.barlow,7.5,ink,'TREBLE',0.02);
+      textSpaced(d,.617*W,topY,F.barlow,7.5,ink,'HIGH TREBLE',0.02);
+      textSpaced(d,.675*W,topY,F.barlow,7.5,ink,'NORMAL',0.02);
+      textSpaced(d,.617*W,botY,F.barlow,7.5,ink,'LOUDNESS 1',0.02);
+      textSpaced(d,.675*W,botY,F.barlow,7.5,ink,'LOUDNESS 2',0.02);
+      // ── INPUTS 2x2 (fila top = High Treble, fila bottom = Normal) ──
+      const xA=.740*W, xB=.798*W, iy0=py+ph*.30, iy1=py+ph*.72;
+      textSpaced(d,(xA+xB)/2,cyP,F.barlow,8.5,ink,'INPUTS',0.04);
+      const jack=(jx2,jy2)=>{ c.beginPath();
+        for(let i=0;i<6;i++){ const t2=i/6*Math.PI*2+0.26;
+          const vx=jx2+9.5*s*Math.cos(t2), vy=jy2+9.5*s*Math.sin(t2);
+          i?c.lineTo(vx,vy):c.moveTo(vx,vy); } c.closePath();
+        const hg2=c.createLinearGradient(jx2-9*s,jy2-9*s,jx2+9*s,jy2+9*s);
+        hg2.addColorStop(0,rgb(226,228,232)); hg2.addColorStop(.5,rgb(140,143,148)); hg2.addColorStop(1,rgb(196,199,204));
+        c.fillStyle=hg2; c.fill(); c.strokeStyle=rgb(60,56,48); c.lineWidth=0.9*s; c.stroke();
+        c.beginPath(); c.arc(jx2,jy2,6.2*s,0,7); c.fillStyle=rgb(16,14,14); c.fill();
+        c.strokeStyle=rgb(190,193,198); c.lineWidth=1.4*s; c.stroke();
+        c.beginPath(); c.arc(jx2,jy2,2.4*s,0,7); c.fillStyle=rgb(50,48,44); c.fill(); };
+      jack(xA,iy0); jack(xB,iy0); jack(xA,iy1); jack(xB,iy1);
+      textSpaced(d,xA-17*s,iy0,F.barlow,8.5,ink,'1',0); textSpaced(d,xB+17*s,iy0,F.barlow,8.5,ink,'2',0);
+      textSpaced(d,xA-17*s,iy1,F.barlow,8.5,ink,'1',0); textSpaced(d,xB+17*s,iy1,F.barlow,8.5,ink,'2',0);
+      // ── placa JTM / 45 (borde derecho del panel, apilado) ──
+      textSpaced(d,.845*W,cyP-8*s,F.bebas,13,ink,'JTM',0.10);
+      textSpaced(d,.845*W,cyP+8*s,F.bebas,13,ink,'45',0.12);
+      // ── cable / puente (click: High Treble -> jumpereado -> Normal) ──
       const inp=(vals&&vals[6]!=null)?vals[6]:0.5;
       const plug=(jx,jy)=>{ rr(c,jx-4.6*s,jy-5.5*s,9.2*s,6.5*s,2*s); c.fillStyle=rgb(36,34,32); c.fill();
-        c.beginPath(); c.moveTo(jx,jy+6*s); c.bezierCurveTo(jx+6*s,jy+44*s, jx-34*s,jy+54*s, jx-46*s,H*0.99);
-        c.lineWidth=5*s; c.lineCap='round'; c.strokeStyle=rgb(18,18,20); c.stroke(); c.lineCap='butt'; };
-      const jumper=(x1,y1,x2,y2)=>{ const mx=(x1+x2)/2, my=Math.min(y1,y2)-13*s;
-        c.beginPath(); c.moveTo(x1,y1); c.quadraticCurveTo(mx,my,x2,y2); c.lineWidth=3.6*s; c.lineCap='round'; c.strokeStyle=rgb(18,18,20); c.stroke(); c.lineCap='butt'; };
-      let mode; if(inp<0.25){plug(ix0,iy0);mode='BRIGHT';} else if(inp<0.75){jumper(ix0,iy1,ix1,iy0);plug(ix0,iy0);mode='JUMPERED';} else {plug(ix1,iy0);mode='NORMAL';}
-      textSpaced(d,(ix0+ix1)/2,py+ph*.06,F.barlow,7,rgb(150,42,30),mode,0.06);
-      textSpaced(d,(G.px+G.pw)-44*s,py+ph*.90,F.bebas,12,rgb(40,34,24),'MARSTEN',0.08); } };
+        const cg=c.createLinearGradient(jx-4.6*s,jy,jx+4.6*s,jy); cg.addColorStop(0,rgb(188,192,198)); cg.addColorStop(0.5,rgb(120,124,130)); cg.addColorStop(1,rgb(188,192,198));
+        rr(c,jx-4.6*s,jy+1*s,9.2*s,3.6*s,1.4*s); c.fillStyle=cg; c.fill();
+        c.beginPath(); c.moveTo(jx,jy+6*s); c.bezierCurveTo(jx+6*s,jy+40*s, jx-32*s,jy+50*s, jx-44*s,H*0.99);
+        c.lineWidth=5*s; c.lineCap='round'; c.strokeStyle=rgb(18,18,20); c.stroke();
+        c.lineWidth=1.6*s; c.strokeStyle='rgba(255,255,255,0.10)'; c.stroke(); c.lineCap='butt'; };
+      const jumper=(x1,y1,x2,y2)=>{ const my=Math.max(y1,y2)+15*s;
+        c.beginPath(); c.arc(x1,y1,3*s,0,7); c.fillStyle=rgb(36,34,32); c.fill();
+        c.beginPath(); c.arc(x2,y2,3*s,0,7); c.fillStyle=rgb(36,34,32); c.fill();
+        c.beginPath(); c.moveTo(x1,y1); c.quadraticCurveTo((x1+x2)/2,my,x2,y2);
+        c.lineWidth=3.8*s; c.lineCap='round'; c.strokeStyle=rgb(18,18,20); c.stroke();
+        c.lineWidth=1.4*s; c.strokeStyle='rgba(255,255,255,0.10)'; c.stroke(); c.lineCap='butt'; };
+      let mode;
+      if (inp < 0.25)      { plug(xA,iy0); mode='HIGH TREBLE'; }
+      else if (inp < 0.75) { jumper(xB,iy0,xA,iy1); plug(xA,iy0); mode='JUMPERED'; }
+      else                 { plug(xA,iy1); mode='NORMAL'; }
+      textSpaced(d,(xA+xB)/2,py-10*s,F.barlow,7.5,gold,mode,0.06); } };
 
   // ── MARSTEN MAJOR (Marshall Major 200W "The Pig") — same black-tolex gold-panel
   //    head as the Plexi/JTM45 (the Major shares the cosmetic; the 4x KT88 / 200W
@@ -8710,7 +8878,7 @@
     lovoltdr504:1.45, lovoltdr103:1.45, samplegvh140c:1.78,
     // British / boutique heads
     boxac30:1.30, bendersupernova22:1.45, dualrect:1.72, dsl100:1.45, plexi:1.75,
-    marstenvs100:1.45, marstenjcm800:1.60, marstenjtm45:1.55, marstenbluesbreaker:1.60, marstenmajor:1.55, deezelvh4:1.45, raneyironheart:1.45,
+    marstenvs100:1.45, marstenjcm800:1.60, marstenjtm45:1.70, marstenbluesbreaker:1.60, marstenmajor:1.55, deezelvh4:1.45, raneyironheart:1.45,
     marstendsl15:1.60, marstenjvm410:1.60, marstensilverjubilee:1.62, aor50:1.38, jc90:1.15, engelfireball:1.45,
     polystoneminibrute:1.28, ronaldjc120:1.60, tw40:1.45, benderdeluxe:1.45, tw26:1.45, superdrive45:1.45,
     markiii:1.80, markii:1.80, unparalleldc30:1.78, unparallelchieftain:1.75,
