@@ -355,12 +355,19 @@ def _build_params_for_piece(
         if not isinstance(m, dict) or "param" not in m:
             skipped.append(rs_knob)
             continue
-        translated = _translate_one_knob(rs_value, m, stem)
-        if translated is None:
+        # `param` may be a LIST — one RS knob driving several VST params
+        # (e.g. JTM45 Gain -> Loudness 1 + Loudness 2, the jumpered rig).
+        targets = m["param"] if isinstance(m["param"], list) else [m["param"]]
+        hit = False
+        for target in targets:
+            translated = _translate_one_knob(rs_value, {**m, "param": target}, stem)
+            if translated is None:
+                continue
+            param_name, value = translated
+            out[param_name] = value
+            hit = True
+        if not hit:
             skipped.append(rs_knob)
-            continue
-        param_name, value = translated
-        out[param_name] = value
     return (out, skipped)
 
 

@@ -24,6 +24,13 @@
 // de fizz/hiss de las capturas, no se persigue), sub +3 a V3, LOCUT +3.6
 // de graves (su LOCUT probablemente es Bass=0 exacto).
 //
+// JUMPER calibrado aparte contra V10BOTH_CRANKED_P4 (la ref jumpereada es MAS
+// sucia que la de un canal: coh -0.08/-0.10, +1.4 dB en 50-100): normalBody
+// (canal Normal gordo real, el porque del truco), jDrive 1.45x en el grid de
+// V2a, normalTop y jumpTopTrim. Con eso both-dimed queda en bandas +-0.6 y la
+// coherencia en la misma clase que el residual single (+0.10/+0.08). El
+// mapping del juego ahora lleva RS Gain a los DOS Loudness (rig jumpereado).
+//
 #include "../../_shared/tube_stage.hpp"
 #include <cmath>
 
@@ -40,6 +47,8 @@ struct Biquad {
         float a0=1+al/A; b0=(1+al*A)/a0; b1=-2*c/a0; b2=(1-al*A)/a0; a1=-2*c/a0; a2=(1-al/A)/a0; }
     void highShelf(float sr,float f,float dB){ if(f>sr*0.49f)f=sr*0.49f; float A=std::pow(10.f,dB/40.f),w=2*kPi*f/sr,c=std::cos(w),s=std::sin(w),al=s*0.5f*1.4142135f,rA=std::sqrt(A),t=2*rA*al;
         float a0=(A+1)-(A-1)*c+t; b0=A*((A+1)+(A-1)*c+t)/a0; b1=-2*A*((A-1)+(A+1)*c)/a0; b2=A*((A+1)+(A-1)*c-t)/a0; a1=2*((A-1)-(A+1)*c)/a0; a2=((A+1)-(A-1)*c-t)/a0; }
+    void lowShelf(float sr,float f,float dB){ if(f>sr*0.49f)f=sr*0.49f; float A=std::pow(10.f,dB/40.f),w=2*kPi*f/sr,c=std::cos(w),s=std::sin(w),al=s*0.5f*1.4142135f,rA=std::sqrt(A),t=2*rA*al;
+        float a0=(A+1)+(A-1)*c+t; b0=A*((A+1)-(A-1)*c+t)/a0; b1=2*A*((A-1)-(A+1)*c)/a0; b2=A*((A+1)-(A-1)*c-t)/a0; a1=-2*((A-1)+(A+1)*c)/a0; a2=((A+1)+(A-1)*c-t)/a0; }
 };
 
 struct Jtm45Core {
@@ -47,7 +56,7 @@ struct Jtm45Core {
     rbtube::HP1 inCoupling;
     rbtube::TubeStage vBright, vNormal, v2a;     // V1 (dos mitades) + V2a post-mezcla
     rbtube::CouplingCapGridLeak cpBright, cpNormal, cp2;
-    Biquad brightShelf, presenceShelf, outTilt, loadBassRes, loadMid;
+    Biquad brightShelf, normalBody, normalTop, presenceShelf, outTilt, loadBassRes, loadMid, jumpTopTrim;
     rbtube::ToneStackYeh tone;
     rbtube::PhaseInverterLTP12AX7 pi;            // ECC83 real (set() generico; setMarshall gatea)
     rbtube::PowerAmp5881 power;                  // ~KT66
@@ -67,8 +76,8 @@ struct Jtm45Core {
 
     void reset(){ inCoupling.reset(); vBright.reset(); vNormal.reset(); v2a.reset();
         cpBright.reset(); cpNormal.reset(); cp2.reset();
-        brightShelf.reset(); tone.reset(); presenceShelf.reset(); outTilt.reset();
-        loadBassRes.reset(); loadMid.reset(); pi.reset(); power.reset(); otVoice.reset(); }
+        brightShelf.reset(); normalBody.reset(); normalTop.reset(); tone.reset(); presenceShelf.reset(); outTilt.reset();
+        loadBassRes.reset(); loadMid.reset(); jumpTopTrim.reset(); pi.reset(); power.reset(); otVoice.reset(); }
 
     // V2b cathode follower acoplado directo (mismo modelo que el Jcm800Core).
     static inline float cfSquash(float x){
@@ -94,6 +103,11 @@ struct Jtm45Core {
         cp2.set(sr, 1.0e6f, 22.0e-9f, 10.0e3f, 0.80f, 0.35f, 0.8f);
         // Bright cap del Loudness I (100pF): fuerte a volumen bajo, desaparece arriba.
         brightShelf.highShelf(sr, 1500.0f, 1.5f + 5.5f * (1.0f - rbtube::PotTaper::audio(pL1, 0.9f)));
+        // Canal NORMAL: voz gorda real (acoples grandes, sin bright cap). Es el
+        // motivo del truco del jumper: la ref V10BOTH suma +1.4 dB en 50-100
+        // vs V10 de un canal y esos graves empujan al power (fit vs grilla A2).
+        normalBody.lowShelf(sr, 150.0f, 3.0f);
+        normalTop.highShelf(sr, 2800.0f, -1.6f);        // sin bright cap = mas oscuro arriba
 
         const float drv0 = (pL1 > pL2 ? pL1 : pL2);
         cfDrive = 0.85f + 1.15f * rbtube::PotTaper::audio(drv0, 0.9f);
@@ -113,6 +127,10 @@ struct Jtm45Core {
         outTilt.highShelf(sr, 2800.0f, 6.2f);                 // aire contra carga (fit vs grilla A2)
         loadMid.peak(sr, 1300.0f, 1.6f, 0.9f);                // 800-2k quedaba -1.2..-2.1 vs la grilla
         loadBassRes.peak(sr, 100.0f, 0.3f + 2.0f * drvA, 0.9f); // resonancia OT+carga (crece con drive; a V3 el sub sobraba)
+        // Jumpereado el balance real pierde un pelo de 2-5k (fit vs V10BOTH).
+        const float jbR = (pInput <= 0.5f) ? 1.0f : (1.0f - (pInput-0.5f)*2.0f);
+        const float jnR = (pInput >= 0.5f) ? 1.0f : (pInput*2.0f);
+        jumpTopTrim.peak(sr, 3000.0f, -1.5f * jbR * jnR, 0.85f);
 
         outLevel = std::pow(10.0f, 0.05f * (-0.33f - 6.93f * drv0 - 1.46f * drv0 * drv0));
     }
@@ -122,8 +140,11 @@ struct Jtm45Core {
         const float jb = (pInput <= 0.5f) ? 1.0f : (1.0f - (pInput-0.5f)*2.0f);   // peso bright
         const float jn = (pInput >= 0.5f) ? 1.0f : (pInput*2.0f);                  // peso normal
         const float b = cpBright.process(vBright.process(brightShelf.process(x)), gB);
-        const float n = cpNormal.process(vNormal.process(x), gN);
-        float y = v2a.process(0.55f * (jb*b + jn*n));     // V2a post-mezcla
+        const float n = cpNormal.process(vNormal.process(normalTop.process(normalBody.process(x))), gN);
+        // Jumpereado los dos canales suman EN el grid de V2a (mixers 270k):
+        // la ref V10BOTH es MAS sucia que V10 de un canal, no mas limpia.
+        const float jDrive = 1.0f + 0.45f * jb * jn;
+        float y = v2a.process(0.55f * jDrive * (jb*b + jn*n));   // V2a post-mezcla
         y = cfSquash(cp2.process(y, cfDrive));            // V2b cathode follower
         y = tone.process(y);                              // stack DESPUES del clipping del pre
         y = presenceShelf.process(y);
@@ -133,6 +154,7 @@ struct Jtm45Core {
         y = outTilt.process(y);
         y = loadMid.process(y);
         y = loadBassRes.process(y);
+        y = jumpTopTrim.process(y);
         return y * outLevel;
     }
 };

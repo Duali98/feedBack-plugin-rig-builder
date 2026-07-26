@@ -278,8 +278,11 @@ def _gain_param_names(knob_map: dict, gears: list[str], stem: str) -> list[str]:
             spec = sub.get(knob)
             if isinstance(spec, dict) and spec.get("param"):
                 p = spec["param"]
-                if p not in names:
-                    names.append(p)
+                # `param` may be a LIST (one RS knob driving several params,
+                # e.g. JTM45 Gain -> Loudness 1 + Loudness 2).
+                for one in (p if isinstance(p, list) else [p]):
+                    if one not in names:
+                        names.append(one)
     return names
 
 

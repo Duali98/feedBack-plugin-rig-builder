@@ -13234,19 +13234,24 @@ async function rbComputeRsMappedParams(rsGearType, rsKnobs, vstStem, paramsList)
         if (!rsKnobs || !(rsKnobName in rsKnobs)) continue;
         const rsValue = parseFloat(rsKnobs[rsKnobName]);
         if (isNaN(rsValue)) continue;
-        let targetId;
-        if (typeof rule.param === 'number') targetId = rule.param;
-        else if (typeof rule.param === 'string') {
-            targetId = nameToId[rule.param.toLowerCase()];
-            if (targetId == null) { const asInt = parseInt(rule.param, 10);
-                if (!isNaN(asInt) && String(asInt) === rule.param.trim()) targetId = asInt; }
-        }
-        if (targetId == null) continue;
         const scale = (rule.scale != null) ? parseFloat(rule.scale) : 0.01;
         const offset = (rule.offset != null) ? parseFloat(rule.offset) : 0;
         let v = rsValue * scale + offset;
         if (rule.invert) v = 1 - v;
-        out[targetId] = Math.max(0, Math.min(1, v));
+        v = Math.max(0, Math.min(1, v));
+        // `param` may be a LIST — one RS knob driving several VST params
+        // (e.g. JTM45 Gain -> Loudness 1 + Loudness 2, the jumpered rig).
+        for (const p of (Array.isArray(rule.param) ? rule.param : [rule.param])) {
+            let targetId;
+            if (typeof p === 'number') targetId = p;
+            else if (typeof p === 'string') {
+                targetId = nameToId[p.toLowerCase()];
+                if (targetId == null) { const asInt = parseInt(p, 10);
+                    if (!isNaN(asInt) && String(asInt) === p.trim()) targetId = asInt; }
+            }
+            if (targetId == null) continue;
+            out[targetId] = v;
+        }
     }
     return out;
 }
@@ -13318,33 +13323,36 @@ async function rbApplyRsSettingsToVst(toneIdx, pIdx) {
         if (!(rsKnobName in rsKnobs)) { skipped.push(`${rsKnobName} (not on this gear)`); continue; }
         const rsValue = parseFloat(rsKnobs[rsKnobName]);
         if (isNaN(rsValue)) { skipped.push(`${rsKnobName} (NaN)`); continue; }
-        // Resolve the target VST param id. `rule.param` can be an int index
-        // (most reliable) or a case-insensitive name lookup.
-        let targetId;
-        if (typeof rule.param === 'number') {
-            targetId = rule.param;
-        } else if (typeof rule.param === 'string') {
-            // NAME first (graphic-EQ params are named by band frequency, e.g.
-            // "50"); fall back to a numeric index only if no name matches.
-            targetId = nameToId[rule.param.toLowerCase()];
-            if (targetId == null) {
-                const asInt = parseInt(rule.param, 10);
-                if (!isNaN(asInt) && String(asInt) === rule.param.trim()) targetId = asInt;
-            }
-        }
-        if (targetId == null) { skipped.push(`${rsKnobName} → ${rule.param} (param not found on VST)`); continue; }
         const scale = (rule.scale != null) ? parseFloat(rule.scale) : 0.01;
         const offset = (rule.offset != null) ? parseFloat(rule.offset) : 0;
         let v = rsValue * scale + offset;
         if (rule.invert) v = 1 - v;
         v = Math.max(0, Math.min(1, v));    // clamp into VST normalised range
-        try {
-            await api.setParameter(piece._vst_slot_id, targetId, v);
-            piece._vst_params = piece._vst_params || {};
-            piece._vst_params[targetId] = v;
-            applied++;
-        } catch (e) {
-            skipped.push(`${rsKnobName} (setParameter threw: ${e.message || e})`);
+        // Resolve the target VST param id(s). `rule.param` can be an int index
+        // (most reliable), a case-insensitive name lookup, or a LIST of either
+        // (one RS knob driving several params, e.g. JTM45 Gain -> Loudness 1+2).
+        for (const p of (Array.isArray(rule.param) ? rule.param : [rule.param])) {
+            let targetId;
+            if (typeof p === 'number') {
+                targetId = p;
+            } else if (typeof p === 'string') {
+                // NAME first (graphic-EQ params are named by band frequency, e.g.
+                // "50"); fall back to a numeric index only if no name matches.
+                targetId = nameToId[p.toLowerCase()];
+                if (targetId == null) {
+                    const asInt = parseInt(p, 10);
+                    if (!isNaN(asInt) && String(asInt) === p.trim()) targetId = asInt;
+                }
+            }
+            if (targetId == null) { skipped.push(`${rsKnobName} → ${p} (param not found on VST)`); continue; }
+            try {
+                await api.setParameter(piece._vst_slot_id, targetId, v);
+                piece._vst_params = piece._vst_params || {};
+                piece._vst_params[targetId] = v;
+                applied++;
+            } catch (e) {
+                skipped.push(`${rsKnobName} (setParameter threw: ${e.message || e})`);
+            }
         }
     }
     // Refresh the slider display so the new values show up.

@@ -7393,9 +7393,12 @@
   "marstenjtm45": {
    "_hint": "Marsten JTM45 = Marshall JTM45 (non-master, like the Plexi). RS Gain -> LOUDNESS 1 (High-Treble channel volume = breakup driver); Bass/Mid/Treble -> Marshall tone stack, Pres -> Presence. _static: Loudness 2 + Input (jumpered).",
    "Gain": {
-    "param": "Loudness 1",
+    "param": [
+     "Loudness 1",
+     "Loudness 2"
+    ],
     "scale": 0.0076,
-    "_hint": "RS Gain -> LOUDNESS 1 (the breakup driver). RS 0 now maps to a low-but-audible real pot position instead of muting the amp.",
+    "_hint": "RS Gain -> LOUDNESS 1 + LOUDNESS 2 together (the jumpered rig: both volumes ride up, so max = the V10BOTH roar of the real amp). RS 0 maps to a low-but-audible real pot position instead of muting the amp.",
     "offset": 0.24
    },
    "Bass": {
@@ -7416,10 +7419,9 @@
     "_hint": "RS Pres -> Presence (NFB)."
    },
    "_static": {
-    "Loudness 2": 0.3,
     "Input": 0.5,
     "Cab Sim": 1.0,
-    "_note": "Loudness 2 low, Input jumpered (Both). Cab Sim stays on until the host bypasses it for an external cabinet/IR. Adjust on the face."
+    "_note": "Input jumpered (Both); Gain drives both Loudness pots. Cab Sim stays on until the host bypasses it for an external cabinet/IR. Adjust on the face."
    }
   }
  },
