@@ -15,6 +15,24 @@
 // no 5E3 pot -> they are voicing shelves driven by the game transform. Tubes use OUR
 // Koren tables (public model), not Guitarix GPL code.
 //
+// RECALIBRADO 2026-07-26 contra el pack A2 del 5E3 real (wendycabs, 7 capturas
+// amp-only en test logic/deluxe5e3_a2/): "Bright Chanel" = input 1 del canal
+// Instrument con Clean/Crunch/Drive/Full ~ Vol 0.25/0.5/0.75/1.0; "Normal
+// Chanel" = input 2 (68k) con el capturista compensando el pad a vol mas alto
+// (su Drive calza exacto con nuestro input2 @ 0.95: coh +-0.01, crest +0.2).
+// Lo que cambio vs el fit viejo (refs Woodrow sin carga): la voz amp-only
+// tenia +12..+18 dB de lowShelf, +20..+33 de aire y sin cuerpo de mids
+// (+5..+8 sub, +9..+14 fizz 5-10k, -2 mids vs el amp real); el power con piso
+// de drive 8.5 SIEMPRE mordia; la curva cranked rompia demasiado temprano
+// (Drive 0.75 era +1.6 dB mas no-lineal que la ref) y el 12 real es PARED por
+// sag+drive (ref Full vs Clean: coh -0.32/-0.55/-0.86, crest -4.4, que ahora
+// clavamos: nonlinear "close", crest +0.6). Resultado final del sweep Bright:
+// bandas <=+-1.1 (Drive +-2.0), coherencias +-0.05. RESIDUALES: coh 2.5-8k a
+// Clean (-0.46) es artefacto de alineacion fraccional del harness (la
+// comparacion no-lineal da "close"), sub +1.8..+2.4 a Drive/NormalDrive, y el
+// canal Mic no tiene ground truth en el pack (curva crankedMic propia,
+// razonable pero sin anclar).
+//
 #include "../../_shared/tube_stage.hpp"
 #include <cmath>
 
@@ -149,22 +167,25 @@ static inline float volumeMakeupDb(float inst, float mic)
     // Instrument, Mic and equally-jumpered sweeps at -21.5 dBFS RMS. They are
     // monitor gains only and therefore cannot change tube drive or sag.
     static const float kInstDb[21] = {
-        10.488f, 3.537f, 1.523f, 0.619f, 0.079f,
-        -0.304f,-0.611f,-0.876f,-1.120f,-1.353f,
-        -1.580f,-1.806f,-2.128f,-3.239f,-4.843f,
-        -6.514f,-8.027f,-9.285f,-10.247f,-10.942f,-11.427f
+        10.488f, 13.574f, 11.434f, 10.498f, 9.974f,
+        9.629f, 9.377f, 9.174f, 9.001f, 8.843f,
+        8.690f, 8.535f, 8.373f, 8.201f, 7.970f,
+        7.005f, 4.371f, 0.596f, -2.972f, -5.363f,
+        -6.302f
     };
     static const float kMicDb[21] = {
-        10.488f, 7.282f, 5.622f, 4.731f, 4.144f,
-         3.689f, 3.301f, 2.947f, 2.607f, 2.272f,
-         1.930f, 1.580f, 1.090f,-0.453f,-2.626f,
-        -4.837f,-6.762f,-8.210f,-9.170f,-9.771f,-10.155f
+        10.488f, 16.497f, 14.710f, 13.801f, 13.224f,
+        12.795f, 12.444f, 12.128f, 11.832f, 11.544f,
+        11.248f, 10.847f, 9.986f, 8.798f, 7.417f,
+        5.442f, 2.316f, -1.447f, -4.662f, -6.409f,
+        -7.046f
     };
     static const float kBothDb[21] = {
-        10.488f, 2.706f, 0.643f,-0.264f,-0.798f,
-        -1.171f,-1.466f,-1.717f,-1.943f,-2.157f,
-        -2.361f,-2.561f,-2.851f,-3.902f,-5.426f,
-        -7.011f,-8.437f,-9.601f,-10.461f,-11.035f,-11.368f
+        10.488f, 12.113f, 9.870f, 8.924f, 8.402f,
+        8.066f, 7.827f, 7.640f, 7.486f, 7.352f,
+        7.231f, 7.115f, 7.003f, 6.894f, 6.744f,
+        5.900f, 3.451f, -0.091f, -3.420f, -5.575f,
+        -6.282f
     };
 
     inst = clamp01(inst);
@@ -212,6 +233,7 @@ struct TW26Core {
     rbtube::MultiNodeBPlus supply;      // 5Y3 + 16uF nodes + 4k7/22k droppers
     rbtube::PowerAmp6V6  power;         // 2x 6V6 push-pull, cathode-biased, no NFB
     Biquad bassSh, outputTransformerLow, outputTransformerAir, crankedAirTrim, crankedTopTrim;
+    Biquad midBody, topTrim;
     Biquad spkBody, spkRoll, midScoop;
     TweedVolumeToneNetwork controls;
     // params (0..1), interface identical to the old TW26Core
@@ -237,13 +259,15 @@ struct TW26Core {
         millerV2.reset(); coupleToV2.reset(); coupleToPi.reset(); phaseInverter.reset(); supply.reset(); power.reset();
         controls.reset(); bassSh.reset();
         outputTransformerLow.reset(); outputTransformerAir.reset(); crankedAirTrim.reset(); crankedTopTrim.reset();
+        midBody.reset(); topTrim.reset();
         spkBody.reset(); spkRoll.reset(); midScoop.reset();
         lastPowerLoad = lastScreenLoad = lastPreampLoad = 0.0f; }
 
     void recalc(){
         const float activeUi = std::fmax(pInst, pMic);
-        float cranked = clamp01((activeUi - 0.58f) / 0.42f);
+        float cranked = clamp01((activeUi - 0.66f) / 0.34f);
         cranked = cranked * cranked * (3.0f - 2.0f * cranked);
+        cranked *= cranked;   // el 5E3 real sube suave 6-9 y recien ES pared al 12 (fit A2)
         inputCoupling.set(sr, 12.0f);
         // Real cathode-biased stages (self-bias solved). Fender '57 Deluxe schematic:
         // The supplied Fender 57 drawing specifies 12AX7A for both halves of V1,
@@ -264,21 +288,21 @@ struct TW26Core {
         instPot = 0.005f + 0.995f * rbtube::PotTaper::audio(pInst, 1.28f);
         micPot  = 0.005f + 0.995f * rbtube::PotTaper::audio(pMic,  1.28f);
         tonePot = 0.020f + 0.960f * rbtube::PotTaper::audio(pTone, 1.18f);
-        inScale = 3.25f;
+        inScale = 1.8f;   // 3.25 hacia morder a V1 con cualquier transiente (hash 2.5-8k a Clean vs el pack A2)
         // Input 2 is the 68k/68k low-sensitivity divider, not a treble switch.
         // Input 1 keeps the full signal into the 1M grid return.
         inputSensitivity = pBright >= 0.5f ? 1.0f : 0.65f;
         // 5E3 Volume pots are post-V1 attenuators feeding V2. The fixed
         // interstage gain preserves the real operating point: knob position
         // changes signal amplitude, never the PI/power transfer itself.
-        preGain = 1.10f;
+        preGain = 1.80f;  // compensa el inScale menor: mismo drive a V2
         gainOut = 1.20f;
 
         // 0.1uF coupling caps into ~1M grid leaks in the 5E3 preamp path; 0.022uF
         // into the cathodyne grid. Positive-grid drive now charges/recover caps
         // instead of passing through ideal HPFs.
-        coupleToV2.set(sr, 1000000.0f, 100.0e-9f, 68000.0f, 0.30f, 0.07f, 0.24f);
-        coupleToPi.set(sr, 1000000.0f, 22.0e-9f, 220000.0f, 0.30f, 0.07f, 0.22f);
+        coupleToV2.set(sr, 1000000.0f, 100.0e-9f, 68000.0f, 0.50f, 0.07f, 0.24f);
+        coupleToPi.set(sr, 1000000.0f, 22.0e-9f, 220000.0f, 0.45f, 0.07f, 0.22f);
         phaseInverter.set(sr, 2.10f, 0.92f, 250.0f,
                           56000.0f, 56000.0f, 2.3f, 0.0f);
 
@@ -287,28 +311,34 @@ struct TW26Core {
                    0.40f, 0.28f, 0.15f, 0.26f);
         controls.set(sr, instPot, micPot, tonePot);
         bassSh.lowShelf(sr, 180.0f, 12.0f * (pBass - 0.5f));       // hidden game shelf; neutral at noon
-        // 2x 6V6 push-pull, cathode-biased, NO NFB, heavy 5Y3 sag (big bloom)
-        const float micPowerDrive = pMic > pInst ? 2.5f * cranked : 0.0f;
-        power.set(sr, 8.5f + 6.5f * cranked + micPowerDrive,
-                  -13.0f, 0.42f, 32.0f, 18000.0f);
+        // 2x 6V6 push-pull, cathode-biased, NO NFB, heavy 5Y3 sag (big bloom).
+        // Piso de drive re-fiteado vs el pack A2: el 8.5 fijo tenia al power
+        // SIEMPRE mordiendo (hash 2.5-8k a Clean, coh -0.52); el 12 real es
+        // pared por sag+drive, no por piso.
+        float crankedMic = clamp01((activeUi - 0.52f) / 0.48f);
+        crankedMic = crankedMic * crankedMic * (3.0f - 2.0f * crankedMic);
+        const float micPowerDrive = pMic > pInst ? 3.5f * crankedMic : 0.0f;
+        power.set(sr, 4.6f + 11.4f * cranked + micPowerDrive,
+                  -13.0f, 0.42f + 0.08f * cranked, 32.0f, 18000.0f);
         power.out = 0.009f;
         power.biasShift = 3.0f;
-        // Electrical low-frequency rise from the 5E3 OT/reactive load remains
-        // in amp-only mode; this is not an acoustic speaker/cabinet filter.
+        // Voz de carga reactiva RE-FITEADA contra el pack A2 del 5E3 real
+        // (wendycabs, amp-only): el fit viejo (refs Woodrow sin carga) tenia
+        // +12..+18 dB de lowShelf y +20..+33 dB de aire -> +5..+8 de sub,
+        // +9..+14 de fizz 5-10k y -2 de mids vs el amp real.
         const float activePot = std::fmax(instPot, 0.80f * micPot);
-        outputTransformerLow.lowShelf(sr, 95.0f, 12.5f + 5.5f * activePot);
-        // Keep only the fixed electrical compensation for the cascaded tube
-        // anti-alias poles. Tone-dependent air boosts belonged to the failed
-        // reference fit and contradicted C4/C5 at the dark end.
+        outputTransformerLow.lowShelf(sr, 95.0f, 3.4f + 0.2f * activePot - 3.0f * cranked);   // el real NO engorda el sub al crankear (+0.3 ref)
         const float toneBright = std::fmax(0.0f, (tonePot - 0.44f) / 0.56f);
         const float toneDark = std::fmax(0.0f, (0.44f - tonePot) / 0.44f);
         outputTransformerAir.highShelf(sr, 4800.0f,
-                                       20.5f + 13.0f * activePot
+                                       6.5f + 5.5f * activePot
                                        + 3.0f * toneBright - 4.0f * toneDark);
+        midBody.peaking(sr, 650.0f, 0.6f, 2.2f + 1.0f * cranked);        // cuerpo 250-2k que faltaba
+        topTrim.peaking(sr, 3200.0f, 0.8f, -0.7f + 3.4f * cranked);   // los armonicos reales rellenan 2-5k al crankear      // 2-5k caliente (r1 -2.5 sobre-corto)
         if (pMic > pInst) {
             // The microphone channel reference loses substantially more upper
             // harmonic energy once V2/PI/6V6 saturation starts.
-            crankedAirTrim.highShelf(sr, 1800.0f, -8.5f * cranked);
+            crankedAirTrim.highShelf(sr, 1800.0f, -5.0f * crankedMic);
         } else {
             // Instrument keeps its top octave, but its cranked upper mids are
             // softer than a broad high-shelf correction would allow.
@@ -329,13 +359,16 @@ struct TW26Core {
         float inst = instV1.process(instMiller.process(instIn) * inScale * bplus.preamp);
         float mic = micV1.process(micMiller.process(micIn) * (inScale * 0.92f) * bplus.preamp);
         const float activeUi = std::fmax(pInst, pMic);
-        float cranked = clamp01((activeUi - 0.58f) / 0.42f);
+        float cranked = clamp01((activeUi - 0.66f) / 0.34f);
         cranked = cranked * cranked * (3.0f - 2.0f * cranked);
+        cranked *= cranked;   // el 5E3 real sube suave 6-9 y recien ES pared al 12 (fit A2)
         // Noon is already close to the reference. Above roughly 7/12 the 5E3
         // rapidly drives V2, the cathodyne and the cathode-biased 6V6 pair;
         // keeping this factor fixed was why max remained essentially clean.
-        const float controlNetworkDrive = 1.25f * (1.0f + 2.0f * cranked);
-        const float micDrive = micPot > instPot ? (1.0f + 0.25f * cranked) : 1.0f;
+        const float controlNetworkDrive = 1.25f * (1.0f + 1.5f * cranked);
+        float crankedMic = clamp01((activeUi - 0.52f) / 0.48f);
+        crankedMic = crankedMic * crankedMic * (3.0f - 2.0f * crankedMic);
+        const float micDrive = micPot > instPot ? (1.0f + 0.6f * crankedMic) : 1.0f;
         x = controls.process(inst, mic) * controlNetworkDrive * micDrive;
         x = bassSh.process(x);
         x = v2.process(millerV2.process(coupleToV2.process(x, preGain)) * bplus.preamp);
@@ -345,8 +378,8 @@ struct TW26Core {
         lastScreenLoad = std::fabs(x) * 0.70f;
         x = power.process(x * bplus.power * bplus.screen);        // 6V6 push-pull
         lastPowerLoad = std::fabs(x) * 0.90f;
-        const float ampOnly = crankedTopTrim.process(crankedAirTrim.process(
-            outputTransformerAir.process(outputTransformerLow.process(x))));
+        const float ampOnly = topTrim.process(midBody.process(crankedTopTrim.process(crankedAirTrim.process(
+            outputTransformerAir.process(outputTransformerLow.process(x))))));
         const float cab = spkRoll.process(midScoop.process(spkBody.process(ampOnly))); // 1x12 voicing
         x = ampOnly + pCabSim * (cab - ampOnly);
         return x;
