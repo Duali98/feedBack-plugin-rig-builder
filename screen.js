@@ -2890,6 +2890,17 @@ const RbMegaChain = (function () {
         await rbApplyChainInputDrive({ chain: effectiveChain });
         await rbStartFinalChainNormalizer(effectiveChain);
         try { await _pokeLevelerRelock(); } catch (_) {}
+        // Mega-chain tone switches are bypass-only (no loadPreset/reload — see
+        // the class comment above), so the per-tone noise gate must be pushed
+        // explicitly here on EVERY switch, exactly like the leveler relock
+        // above. Without this the gate only ever reflected whichever tone
+        // happened to be active when the mega-chain was first built (or never
+        // applied at all, since `tone.gate` didn't exist in the mega_chain
+        // response until routes.py started including it) — it worked inside
+        // Rig Builder's own preview (rbLoadNativePresetPayload pushes it on
+        // every loadPreset) but silently went stale/missing during real song
+        // playback, where tone changes never call loadPreset.
+        try { rbApplyToneGate(tone && tone.gate, {}); } catch (_) {}
         _activeToneKey = activeToneKey;
         _emitState();
     }

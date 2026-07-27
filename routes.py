@@ -558,14 +558,26 @@ _PLATFORM_FOR_CATEGORY = {
 # ── Helpers ──────────────────────────────────────────────────────────
 
 def _final_leveler_vst_path() -> Path | None:
-    """Bundled final loudness normalizer VST.
+    """Final loudness normalizer VST — the AGC + brickwall limiter that lives at
+    the very end of every generated chain, independent of whether the previous
+    stages are NAM, VST or IR. This is the only safety net against a hot/loud
+    chain; without it every tone plays at raw, unprotected level.
 
-    This VST lives at the very end of every generated chain and levels the
-    complete result, independent of whether the previous stages are NAM, VST
-    or IR.
+    Only checked `_plugin_dir / vst` (the bundle shipped inside the plugin
+    directory itself), NOT `_downloaded_vst_root()` (where the opt-in
+    per-platform VST pack actually installs — see _vst_search_roots, which
+    every OTHER VST lookup in this file correctly checks). On any install that
+    got its bundled effects via the VST-pack download rather than a plugin.zip
+    that already contained vst/, this always returned None — the leveler was
+    silently missing with no error, no "missing" warning surfaced to the user
+    (native_preset_full's `missing` list DOES report it, but nothing in the
+    UI highlights that specific entry as "your loudness safety net is off").
     """
-    p = (_plugin_dir / _FINAL_LEVELER_REL).resolve()
-    return p if p.exists() else None
+    for root in _vst_search_roots():
+        p = (root / "racks" / _FINAL_LEVELER_NAME).resolve()
+        if p.exists():
+            return p
+    return None
 
 
 # Gear auditions play a single RAW amp/pedal at an unknown level. The leveler's
@@ -5661,6 +5673,25 @@ def _vst_stage(vst_path, vst_format, *, bypassed, state,
     return stage
 
 
+def _apply_piece_postgain(stage: dict, gain_db: float | None) -> None:
+    """Bake the Advanced graph editor's per-piece Level trim (preset_pieces
+    .gain_db) into a stage's `postGain` — the SAME optional field
+    _amp_trim_stage already relies on ("Engines with per-slot postGain
+    support (loadPreset reads this optional field) apply the trim ON THIS
+    SLOT" — see its docstring), so this applies at loadPreset time exactly
+    like the amp-trim stage does, on every consumer of these chain builders
+    (Rig Builder's own preview AND real song/mega-chain playback) — no
+    separate live setPostGain() push required. A no-op for ~0 dB so an
+    untouched piece's stage dict is byte-identical to before."""
+    try:
+        db = float(gain_db or 0.0)
+    except (TypeError, ValueError):
+        return
+    if abs(db) < 1e-3:
+        return
+    stage["postGain"] = round(10.0 ** (db / 20.0), 4)
+
+
 def _safe_child(root: Path | None, name: str | None) -> Path | None:
     """Resolve `name` under `root`, refusing path-escape. Mirrors
     nam_tone._safe_child so the engine gets the same absolute paths."""
@@ -10403,7 +10434,7 @@ def setup(app, context):
 
         rows = conn.execute(
             "SELECT slot, kind, file, rs_gear_type, bypassed, slot_order, "
-            "vst_path, vst_format, vst_state, params_json "
+            "vst_path, vst_format, vst_state, params_json, gain_db "
             "FROM preset_pieces WHERE preset_id = ? "
             "ORDER BY slot_order",
             (preset_id,),
@@ -10451,13 +10482,13 @@ def setup(app, context):
                                           "vst_state": _compute_vst_state_for_piece(tgt, prim["vst_path"], {})}
 
         audio_pieces = []
-        for slot, kind, file, gear, bypassed, slot_order, vst_path, vst_format, vst_state, params_json in rows:
+        for slot, kind, file, gear, bypassed, slot_order, vst_path, vst_format, vst_state, params_json, gain_db in rows:
             if is_full_chain:
                 # Override ON: only the enabled full-chain stage plays; skip the
                 # original gear (kept in the DB so disabling restores it).
                 if kind == _FULL_CHAIN_KIND and file and not bypassed:
                     audio_pieces.append((_rank(slot), slot_order, "nam_full", slot,
-                                         file, gear, False, None, None, params_json))
+                                         file, gear, False, None, None, params_json, gain_db))
                 continue
             if kind == _FULL_CHAIN_KIND:
                 continue   # disabled/inactive override — ignore, original gear plays
@@ -10479,12 +10510,12 @@ def setup(app, context):
             if kind == "nam" and file:
                 audio_pieces.append((_rank(slot), slot_order, "nam", slot,
                                      file, gear, bool(bypassed), None, None,
-                                     params_json))
+                                     params_json, gain_db))
             elif kind == "vst" and vst_path:
                 audio_pieces.append((_rank(slot), slot_order, "vst", slot,
                                      vst_path, gear, bool(bypassed),
                                      vst_format or "VST3", vst_state,
-                                     params_json))
+                                     params_json, gain_db))
         audio_pieces.sort(key=lambda t: (t[0], t[1]))
 
         chain: list[dict] = []
@@ -10495,7 +10526,7 @@ def setup(app, context):
         # amp trim compensates it (chains stay at ONE loudness).
         _pre_amp_lvl = 0.0
         _amp_seen = False
-        for _r, _o, kind, slot, payload, gear, bypassed, vst_format, vst_state, params_json in audio_pieces:
+        for _r, _o, kind, slot, payload, gear, bypassed, vst_format, vst_state, params_json, gain_db in audio_pieces:
             if kind == "nam_full":
                 # Full-chain capture: absolute path, unity drive (no 2.5×
                 # guitar-amp push), and NO cab IR is appended below.
@@ -10506,6 +10537,7 @@ def setup(app, context):
                 chain.append(_nam_stage(path, bypassed=bypassed,
                                         input_level=1.0, output_drive=1.0,
                                         slot=slot, rs_gear=gear or None))
+                _apply_piece_postgain(chain[-1], gain_db)
             elif kind == "nam":
                 path = _safe_child(models_dir, payload)
                 if not path or not path.exists():
@@ -10527,6 +10559,7 @@ def setup(app, context):
                                         input_level=_drive, output_drive=_drive,
                                         slot=slot, rs_gear=gear,
                                         rs_gain=_rs_gain_from_params_json(params_json, gear)))
+                _apply_piece_postgain(chain[-1], gain_db)
             else:  # vst
                 # VST paths are absolute (no sandbox under models_dir). We
                 # don't .exists()-check on the backend because the engine
@@ -10541,6 +10574,7 @@ def setup(app, context):
                     vst_path_p, vst_format, bypassed=bypassed,
                     state=_vst_stage_state(str(vst_path_p), vst_format, effective_vst_state),
                     slot=slot, rs_gear=gear))
+                _apply_piece_postgain(chain[-1], gain_db)
                 # Per-amp loudness trim: a clean gain right after the amp so all
                 # amps sit at the target LUFS (Gain still saturates — untouched).
                 if slot == "amp" and not bypassed:
@@ -10732,7 +10766,7 @@ def setup(app, context):
         def _build_tone_stages(preset_id: int, tone_key: str, out_gain: float):
             rows = conn.execute(
                 "SELECT slot, kind, file, rs_gear_type, bypassed, slot_order, "
-                "vst_path, vst_format, vst_state, params_json "
+                "vst_path, vst_format, vst_state, params_json, gain_db "
                 "FROM preset_pieces WHERE preset_id = ? "
                 "ORDER BY slot_order",
                 (preset_id,),
@@ -10746,23 +10780,23 @@ def setup(app, context):
             tone_is_full_chain = any(r[1] == _FULL_CHAIN_KIND and r[2] and not r[4] for r in rows)
 
             audio_pieces = []
-            for slot, kind, file, gear, bypassed, slot_order, vst_path, vst_format, vst_state, params_json in rows:
+            for slot, kind, file, gear, bypassed, slot_order, vst_path, vst_format, vst_state, params_json, gain_db in rows:
                 if tone_is_full_chain:
                     if kind == _FULL_CHAIN_KIND and file and not bypassed:
                         audio_pieces.append((_rank(slot), slot_order, "nam_full", slot,
-                                             file, gear, False, None, None, params_json))
+                                             file, gear, False, None, None, params_json, gain_db))
                     continue
                 if kind == _FULL_CHAIN_KIND:
                     continue   # disabled override — ignore, original gear plays
                 if kind == "nam" and file:
                     audio_pieces.append((_rank(slot), slot_order, "nam", slot,
                                          file, gear, bool(bypassed), None, None,
-                                         params_json))
+                                         params_json, gain_db))
                 elif kind == "vst" and vst_path:
                     audio_pieces.append((_rank(slot), slot_order, "vst", slot,
                                          vst_path, gear, bool(bypassed),
                                          vst_format or "VST3", vst_state,
-                                         params_json))
+                                         params_json, gain_db))
             audio_pieces.sort(key=lambda t: (t[0], t[1]))
 
             tone_stages: list[dict] = []
@@ -10770,7 +10804,7 @@ def setup(app, context):
             # same composition as the single-tone chain builder above.
             _pre_amp_lvl = 0.0
             _amp_seen = False
-            for _r, _o, kind, slot, payload, gear, persisted_bypassed, vst_format, vst_state, params_json in audio_pieces:
+            for _r, _o, kind, slot, payload, gear, persisted_bypassed, vst_format, vst_state, params_json, gain_db in audio_pieces:
                 if kind == "nam_full":
                     # Absolute path, unity drive, no cab IR (see below).
                     path = _resolve_model_path(payload, models_dir)
@@ -10781,6 +10815,7 @@ def setup(app, context):
                         path, bypassed=persisted_bypassed,
                         input_level=1.0, output_drive=1.0,
                         slot=slot, rs_gear=gear or None, tone_key=tone_key))
+                    _apply_piece_postgain(tone_stages[-1], gain_db)
                     continue
                 if kind == "nam":
                     path = _safe_child(models_dir, payload)
@@ -10796,6 +10831,7 @@ def setup(app, context):
                         input_level=_drive, output_drive=_drive,
                         slot=slot, rs_gear=gear, tone_key=tone_key,
                         rs_gain=_rs_gain_from_params_json(params_json, gear)))
+                    _apply_piece_postgain(tone_stages[-1], gain_db)
                 else:  # vst
                     vp = Path(payload)
                     # NOTE: mega_chain uses the simpler pluginPath wrapper (no
@@ -10810,6 +10846,7 @@ def setup(app, context):
                         vp, vst_format, bypassed=persisted_bypassed,
                         state=_state_b64(state_obj),
                         slot=slot, rs_gear=gear, tone_key=tone_key)
+                    _apply_piece_postgain(_vs, gain_db)
                     # Slot identity for the mega-chain dedupe key: two
                     # instances of the SAME VST inside one tone (e.g. a
                     # doubled pedal) must keep separate chain slots.
@@ -11026,6 +11063,12 @@ def setup(app, context):
                 "preset_id": int(preset_id),
                 "slots": slots_list,
                 "stage_count": len(slots_list),
+                # Per-tone noise gate (routes.py:8973's same _preset_gate helper).
+                # Mega-chain tone switches are bypass-only (no loadPreset/reload —
+                # see the docstring above), so the front-end must explicitly push
+                # this via setNoiseGate on every switch; nothing does that
+                # automatically just because the tone's slots un-bypassed.
+                "gate": _preset_gate(int(preset_id)),
             })
 
         # Master slot lists — same shape as `tones[].slots`. The front-end
