@@ -332,6 +332,22 @@ _batch_state: dict = {
 _batch_lock = threading.Lock()
 _batch_thread: threading.Thread | None = None
 
+# Background "universal noise gate" job state, polled via
+# /universal_noise_gate (GET); only _apply_universal_gate_worker mutates it
+# (under _gate_batch_lock). Separate from _batch_state because this job is
+# much cheaper (no tone3000/VST resolution) and independent of it.
+_gate_batch_state: dict = {
+    "running": False,
+    "progress": 0,
+    "total": 0,
+    "updated": 0,
+    "created": 0,
+    "started_at": None,
+    "finished_at": None,
+}
+_gate_batch_lock = threading.Lock()
+_gate_batch_thread: threading.Thread | None = None
+
 # Serializes read-modify-write cycles on rs_to_real.json (amp_variants
 # CRUD, override_query) so concurrent writes can't corrupt the file.
 _rs_map_lock = threading.Lock()
@@ -521,6 +537,12 @@ _DEFAULT_SETTINGS = {
     # active high-gain stage (dist/overdrive/fuzz) and whose stored gate was
     # never configured by the user — see _auto_gate_for_high_gain.
     "auto_gate_high_gain": True,
+    # The "Universal noise gate" toggle (Advanced tab gate bar): when True,
+    # every tone's per-tone gate is force-enabled (a one-time library-wide
+    # sweep, see _apply_universal_gate_worker) AND newly-saved presets default
+    # to gate-on going forward (see _persist_preset_chain). Independent of
+    # auto_gate_high_gain, which only targets untouched high-gain chains.
+    "universal_noise_gate_enabled": False,
 }
 
 # Tone3000 platform value to request per the game category. Amps and
@@ -899,6 +921,18 @@ def _get_conn_locked() -> sqlite3.Connection:
             _conn.execute("ALTER TABLE preset_pieces ADD COLUMN vst_format TEXT")
         if "vst_state" not in cols:
             _conn.execute("ALTER TABLE preset_pieces ADD COLUMN vst_state TEXT")
+        # Per-piece mix (Advanced graph editor): level trim, stereo pan, and
+        # polarity flip. Previously these only lived in the frontend's
+        # localStorage-cached node graph (rbAdvPersist) and were silently lost
+        # on any real chain reload — a device switch, a cleared cache, or an
+        # Export/Import tone round-trip. Persisted here so they survive like
+        # every other piece field.
+        if "gain_db" not in cols:
+            _conn.execute("ALTER TABLE preset_pieces ADD COLUMN gain_db REAL NOT NULL DEFAULT 0")
+        if "pan" not in cols:
+            _conn.execute("ALTER TABLE preset_pieces ADD COLUMN pan REAL NOT NULL DEFAULT 0")
+        if "phase_inv" not in cols:
+            _conn.execute("ALTER TABLE preset_pieces ADD COLUMN phase_inv INTEGER NOT NULL DEFAULT 0")
         _conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_preset_pieces_preset "
             "ON preset_pieces(preset_id)"
@@ -3650,7 +3684,8 @@ def _load_saved_chain(conn: sqlite3.Connection, preset_id: int,
     """
     rows = conn.execute(
         "SELECT id, slot_order, slot, rs_gear_type, kind, file, params_json, "
-        "       tone3000_id, assigned_mode, bypassed, vst_path, vst_format, vst_state "
+        "       tone3000_id, assigned_mode, bypassed, vst_path, vst_format, vst_state, "
+        "       gain_db, pan, phase_inv "
         "FROM preset_pieces WHERE preset_id = ? ORDER BY slot_order",
         (preset_id,),
     ).fetchall()
@@ -3659,7 +3694,8 @@ def _load_saved_chain(conn: sqlite3.Connection, preset_id: int,
     out: list[dict] = []
     for r in rows:
         (piece_id, slot_order, slot, rs_gear, kind, file, params_json,
-         t3kid, assigned_mode, bypassed, vst_path, vst_format, vst_state) = r
+         t3kid, assigned_mode, bypassed, vst_path, vst_format, vst_state,
+         gain_db, pan, phase_inv) = r
         try:
             knobs = json.loads(params_json) if params_json else {}
         except json.JSONDecodeError:
@@ -3691,6 +3727,13 @@ def _load_saved_chain(conn: sqlite3.Connection, preset_id: int,
             if kind == "vst" and vst_path else vst_state,
         }
         enriched["bypassed"] = bool(bypassed)
+        # Advanced graph editor's per-piece mix (level trim/pan/polarity) — the
+        # frontend mirrors these into `_gain_db`/`_pan`/`_phase_inv` on load
+        # (see rbSeedPieceMix). Without them a fresh chain load always reset
+        # every slider to 0/off, even though the value was saved.
+        enriched["gain_db"] = float(gain_db) if gain_db is not None else 0.0
+        enriched["pan"] = float(pan) if pan is not None else 0.0
+        enriched["phase_inv"] = bool(phase_inv)
         enriched["_preset_piece_id"] = piece_id   # so the UI can reorder/remove by id
         enriched["_slot_order"] = slot_order
         out.append(enriched)
@@ -4725,6 +4768,17 @@ def _persist_preset_chain(
                     primary_ir = p["file"]
                     break
 
+    # A brand-new preset (no row yet) with no explicit gate_enabled defaults to
+    # the "Universal noise gate" setting instead of hardcoded off, so a tone
+    # saved for the first time while it's on already carries the gate. This
+    # ONLY affects the INSERT branch below — an existing row is untouched
+    # unless the caller passed an explicit gate_enabled (see the UPDATE
+    # branch's COALESCE against presets.gate_enabled, which still uses the
+    # original possibly-None value).
+    insert_gate_enabled = gate_enabled
+    if insert_gate_enabled is None and _load_settings().get("universal_noise_gate_enabled", False):
+        insert_gate_enabled = 1
+
     with _lock:
         cur = conn.execute(
             "INSERT INTO presets (name, model_file, ir_file, input_gain, output_gain, "
@@ -4741,7 +4795,7 @@ def _persist_preset_chain(
             "  gate_release=COALESCE(?, presets.gate_release), "
             "  gate_depth=COALESCE(?, presets.gate_depth)",
             (name, primary_model, primary_ir, input_gain, output_gain,
-             gate_threshold, gate_enabled, gate_release, gate_depth, "{}",
+             gate_threshold, insert_gate_enabled, gate_release, gate_depth, "{}",
              gate_threshold, gate_enabled, gate_release, gate_depth),
         )
         preset_id_row = conn.execute(
@@ -4755,8 +4809,9 @@ def _persist_preset_chain(
             conn.execute(
                 "INSERT INTO preset_pieces "
                 "(preset_id, slot_order, slot, rs_gear_type, kind, file, params_json, "
-                " tone3000_id, assigned_mode, bypassed, vst_path, vst_format, vst_state) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " tone3000_id, assigned_mode, bypassed, vst_path, vst_format, vst_state, "
+                " gain_db, pan, phase_inv) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     preset_id,
                     i,
@@ -4771,6 +4826,9 @@ def _persist_preset_chain(
                     p.get("vst_path"),
                     p.get("vst_format"),
                     p.get("vst_state"),
+                    float(p.get("gain_db") or 0.0),
+                    float(p.get("pan") or 0.0),
+                    1 if p.get("phase_inv") else 0,
                 ),
             )
 
@@ -7029,6 +7087,89 @@ def _reassign_bundled_vsts_factory() -> int:
     return updated
 
 
+def _apply_universal_gate_worker(enable: bool) -> None:
+    """Backing job for POST /universal_noise_gate.
+
+    Two passes:
+    1. A single bulk UPDATE flips gate_enabled on every preset row that
+       already exists — the default tone, every saved tone, master-chain
+       sentinels, and every song tone that's ever been mapped. Instant.
+    2. (enable only) Walk the whole library like _batch_worker does, but
+       WITHOUT any gear resolution/tone3000 lookups — just enough to find
+       tones that have NEVER been saved (no presets row yet) and give each
+       one a minimal shell preset (empty chain) with the gate pre-enabled.
+       When that tone is later actually auto-assigned, _persist_preset_chain
+       preserves the gate (its callers never pass gate kwargs — see
+       _batch_worker), so the gate survives into the real chain. Turning the
+       gate back off skips this pass: there's nothing meaningful to disable
+       on a tone nobody has touched yet.
+    """
+    try:
+        # _get_conn() runs first-call migrations that may themselves acquire
+        # _lock (e.g. _get_default_tone_preset_id) — must resolve the
+        # connection BEFORE entering `with _lock:` below, or a first-ever
+        # call deadlocks on this plain (non-reentrant) Lock. Same ordering
+        # _persist_preset_chain already uses.
+        conn = _get_conn()
+        with _lock:
+            updated = conn.execute(
+                "UPDATE presets SET gate_enabled = ?", (1 if enable else 0,)
+            ).rowcount
+            conn.commit()
+        with _gate_batch_lock:
+            _gate_batch_state["updated"] = updated
+
+        if not enable:
+            return
+
+        songs, _cloud_only = _list_library_songs()
+        with _gate_batch_lock:
+            _gate_batch_state["total"] = len(songs)
+            _gate_batch_state["progress"] = 0
+            _gate_batch_state["created"] = 0
+        dlc = _get_dlc_dir() if _get_dlc_dir else None
+        for idx, song_path in enumerate(songs):
+            with _gate_batch_lock:
+                _gate_batch_state["progress"] = idx + 1
+            # One bad song (unparseable tone JSON, a gear shape _parse_tone
+            # doesn't expect, etc.) must never abort the rest of the library
+            # sweep — everything for this song is caught and logged instead.
+            try:
+                if not _is_song_pack(song_path):
+                    continue
+                filename = _db_song_key(song_path.name, song_path)
+                try:
+                    tones = _read_tones_from_sloppak(filename, dlc or song_path.parent)
+                except Exception as e:
+                    log.warning("universal gate: skip %s: %s: %s", filename, type(e).__name__, e)
+                    continue
+                for tone in tones:
+                    try:
+                        parsed = _parse_tone(tone)
+                        tone_key = parsed["key"] or parsed["name"]
+                        preset_name = f"{filename}::{tone_key}"
+                        row = _get_conn().execute(
+                            "SELECT id FROM presets WHERE name = ?", (preset_name,)
+                        ).fetchone()
+                        if row:
+                            continue  # already has a row; the bulk UPDATE above covered it
+                        _persist_preset_chain(
+                            filename=filename, tone_key=tone_key, name=preset_name,
+                            pieces=[], assigned_mode="pending", gate_enabled=1,
+                        )
+                        with _gate_batch_lock:
+                            _gate_batch_state["created"] += 1
+                    except Exception:
+                        log.warning("universal gate: shell-preset create failed for a tone in %s",
+                                    filename, exc_info=True)
+            except Exception:
+                log.warning("universal gate: skip song %s", song_path, exc_info=True)
+    finally:
+        with _gate_batch_lock:
+            _gate_batch_state["running"] = False
+            _gate_batch_state["finished_at"] = time.time()
+
+
 def _batch_worker(mode: str = "all", categories=None):
     """Library-wide auto-assign: unique gear → tone3000 candidate (if
     API access) → recorded as 'pending' otherwise.
@@ -8557,6 +8698,7 @@ def setup(app, context):
             "mega_chain_mode": s.get("mega_chain_mode", True),
             "default_tone_enabled": bool(s.get("default_tone_enabled", False)),
             "rig_builder_enabled": bool(s.get("rig_builder_enabled", True)),
+            "universal_noise_gate_enabled": bool(s.get("universal_noise_gate_enabled", False)),
             # "Play a specific tone" override — MUST be returned here or the
             # Setup toggle + chosen tone can't be restored on reopen (they persist
             # to disk fine via POST, but this GET is a fixed allowlist).
@@ -8836,6 +8978,40 @@ def setup(app, context):
                 _get_conn().execute(f"UPDATE presets SET {sets} WHERE id=?", args)
                 _get_conn().commit()
         return {"ok": True, "gate": _preset_gate(pid)}
+
+    @app.post("/api/plugins/rig_builder/universal_noise_gate")
+    def set_universal_noise_gate(data: dict = Body(...)):
+        """The "Universal noise gate" toggle: force the per-tone gate on (or
+        off) for EVERY tone in the library, and make it the default for any
+        tone saved from now on. Body: `{enabled: bool}`. Runs as a background
+        job (see _apply_universal_gate_worker) — poll GET of the same path
+        for progress, since a full library sweep can take a while."""
+        global _gate_batch_thread
+        enable = bool(data.get("enabled"))
+        with _gate_batch_lock:
+            if _gate_batch_state["running"]:
+                return JSONResponse({"error": "already running"}, 409)
+            _gate_batch_state.update({
+                "running": True, "progress": 0, "total": 0,
+                "updated": 0, "created": 0,
+                "started_at": time.time(), "finished_at": None,
+            })
+        _save_settings({"universal_noise_gate_enabled": enable})
+        _gate_batch_thread = threading.Thread(
+            target=_apply_universal_gate_worker, args=(enable,),
+            name="rig_builder_universal_gate", daemon=True,
+        )
+        _gate_batch_thread.start()
+        return {"ok": True, "enabled": enable}
+
+    @app.get("/api/plugins/rig_builder/universal_noise_gate")
+    def get_universal_noise_gate_status():
+        """Poll target for the background job kicked off above, and for the
+        toggle's initial checked state on page load."""
+        with _gate_batch_lock:
+            status = dict(_gate_batch_state)
+        status["enabled"] = bool(_load_settings().get("universal_noise_gate_enabled", False))
+        return status
 
     @app.post("/api/plugins/rig_builder/default_tone/save")
     def save_default_tone(data: dict = Body(...)):

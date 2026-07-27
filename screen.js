@@ -8168,14 +8168,23 @@ function rbStudioChainToPayload(chain) {
         const isVst = p._vst_kind === 'vst' || (p.assigned && p.assigned.kind === 'vst' && p.assigned.vst_path);
         const cat = (p.category || p.rs_category || '').toLowerCase();
         const slot = p.slot || (cat === 'amp' ? 'amp' : cat === 'cab' ? 'cabinet' : cat === 'rack' ? 'rack' : 'pre_pedal');
+        // Advanced graph editor's per-piece mix. preset_pieces is a full
+        // DELETE+INSERT on every save (no per-field COALESCE like the tone's
+        // gate), so these must always be sent — omitting an untouched piece's
+        // value would silently reset it to 0/off on the next save.
+        const gainDb = typeof p._gain_db === 'number' ? p._gain_db : 0;
+        const pan = typeof p._pan === 'number' ? p._pan : 0;
+        const phaseInv = !!p._phase_inv;
         if (isVst) {
             return { slot, rs_gear_type: p.type, kind: 'vst', file: null,
                 vst_path: rbEffVstPath(p), vst_format: rbEffVstFormat(p), vst_state: rbEffVstState(p),
-                params: {}, assigned_mode: 'manual', bypassed: !!p._bypassed };
+                params: {}, assigned_mode: 'manual', bypassed: !!p._bypassed,
+                gain_db: gainDb, pan, phase_inv: phaseInv };
         }
         const file = rbEffFile(p);
         const kind = rbEffKind(p) || (file ? (cat === 'cab' ? 'ir' : 'nam') : 'none');
-        return { slot, rs_gear_type: p.type, kind, file, params: {}, assigned_mode: 'manual', bypassed: !!p._bypassed };
+        return { slot, rs_gear_type: p.type, kind, file, params: {}, assigned_mode: 'manual', bypassed: !!p._bypassed,
+            gain_db: gainDb, pan, phase_inv: phaseInv };
     });
 }
 
@@ -8639,7 +8648,10 @@ async function rbStudioLoadSavedTones() {
             if (attempt < 2) await new Promise(res => setTimeout(res, 150 * (attempt + 1)));
         }
     }
-    if (tones !== null) rbState.savedTones = tones;   // else preserve the prior list
+    if (tones !== null) {
+        tones.forEach(t => rbSeedPieceMix(t.pieces));
+        rbState.savedTones = tones;   // else preserve the prior list
+    }
     rbState._savedTonesLoaded = true;   // the override dropdown may now safely prune a deleted selection
     try { rbStudioRenderToneChips(); } catch (_) {}
     try { rbPopulateToneOverrideSelect(); } catch (_) {}   // keep the Setup override dropdown in sync
@@ -9487,13 +9499,28 @@ function rbRenderLibrarySongListItem(song, fallbackProviderId) {
         </div>`;
 }
 
+// Seed a loaded piece's UI/persist-facing underscore fields (_bypassed,
+// _gain_db, _pan, _phase_inv) from the wire fields the backend returns
+// (bypassed, gain_db, pan, phase_inv). MUST run on every chain load — song
+// tones, saved tones, master/default — or the Advanced graph's level/pan/Ø
+// controls silently reset to 0/off even though the backend has the real
+// value (see _load_saved_chain in routes.py, the shared source for all of
+// these).
+function rbSeedPieceMix(pieces) {
+    (pieces || []).forEach(p => {
+        p._bypassed = !!p.bypassed;
+        p._gain_db = typeof p.gain_db === 'number' ? p.gain_db : 0;
+        p._pan = typeof p.pan === 'number' ? p.pan : 0;
+        p._phase_inv = !!p.phase_inv;
+    });
+}
 // Seed each piece's _bypassed (the UI/persist flag) from the persisted
 // `bypassed` returned by /song, so the Bypass buttons reflect what was
 // saved. MUST run after every /song fetch (initial load AND the
 // auto-download re-fetch) or a re-render shows bypass as off.
 function rbSeedBypass(data) {
     if (data && Array.isArray(data.tones)) {
-        data.tones.forEach(t => (t.chain || []).forEach(p => { p._bypassed = !!p.bypassed; }));
+        data.tones.forEach(t => rbSeedPieceMix(t.chain));
     }
 }
 
@@ -11748,6 +11775,7 @@ async function rbLoadDefaultToneEditor() {
     }
     if (data) {
         rbState.master.default = Array.isArray(data.pieces) ? data.pieces : [];
+        rbSeedPieceMix(rbState.master.default);
         const cb = document.getElementById('rb-default-tone-enabled');
         if (cb) cb.checked = !!data.enabled;
         window.__rbDefaultToneSetting = !!data.enabled;
@@ -11874,6 +11902,7 @@ async function rbReloadDefaultTone() {
             enabled = !!d.enabled;
             window.__rbDefaultToneSetting = enabled;
             rbState.master.default = Array.isArray(d.pieces) ? d.pieces : [];
+            rbSeedPieceMix(rbState.master.default);
             try { rbApplyToneGate(d.gate, {}); } catch (_) {}
         } catch (_) {}
     }
@@ -11881,10 +11910,9 @@ async function rbReloadDefaultTone() {
     if (!rbDefaultToneHasContent()) { rbState._defaultToneActive = false; return false; }
     try {
         const ok = await rbLoadDefaultTone();
-        // The reload rebuilt the chain pieces from the backend (which doesn't
-        // store pan), so the panning would be lost on app restart. Restore it
-        // from the saved graph (localStorage holds node.pan) + re-apply stereo.
-        try { rbRestorePanFromGraph(); await rbStudioApplyStereoToEngine(); } catch (_) {}
+        // Pan/level/phase now round-trip through the backend (rbSeedPieceMix,
+        // above) — just re-apply stereo routing to the live engine.
+        try { await rbStudioApplyStereoToEngine(); } catch (_) {}
         // Pre-warm the cab variants so the FIRST Cab Room entry is instant (Studio
         // view only, deferred so it never blocks the tone load).
         if (ok && document.getElementById('rb-studio-room'))
@@ -11892,21 +11920,6 @@ async function rbReloadDefaultTone() {
         return ok;
     }
     catch (e) { return false; }
-}
-
-// Re-seed chain pieces' _pan from the persisted node graph (the durable pan
-// store), so a backend reload that rebuilt the pieces doesn't wipe the panning.
-function rbRestorePanFromGraph() {
-    let saved;
-    try { saved = JSON.parse(localStorage.getItem(rbAdvStorageKey()) || 'null'); } catch (_) { return; }
-    if (!saved || !Array.isArray(saved.nodes)) return;
-    const chain = rbStudioCurrentChain();
-    for (const n of saved.nodes) {
-        if (n.kind === 'gear' && typeof n.pieceIdx === 'number' && n.pieceIdx >= 0
-            && typeof n.pan === 'number' && chain[n.pieceIdx]) {
-            chain[n.pieceIdx]._pan = n.pan;
-        }
-    }
 }
 
 async function rbPreviewDefaultTone(btn) {
@@ -12058,6 +12071,12 @@ async function rbPersistMasterChain(role) {
         const fc = rbFullChainPayloadPiece(p);
         if (fc) return fc;
         const isVst = p._vst_kind === 'vst' || (p.assigned && p.assigned.kind === 'vst' && p.assigned.vst_path);
+        // Same reasoning as rbStudioChainToPayload: preset_pieces is a full
+        // DELETE+INSERT on every save, so the mix must always be sent or an
+        // untouched piece's value silently resets to 0/off.
+        const gainDb = typeof p._gain_db === 'number' ? p._gain_db : 0;
+        const pan = typeof p._pan === 'number' ? p._pan : 0;
+        const phaseInv = !!p._phase_inv;
         if (isVst) {
             return {
                 slot: p.slot || `master_${role}`,
@@ -12070,6 +12089,7 @@ async function rbPersistMasterChain(role) {
                 params: {},
                 assigned_mode: 'master',
                 bypassed: !!p._bypassed,
+                gain_db: gainDb, pan, phase_inv: phaseInv,
             };
         }
         const file = rbEffFile(p);
@@ -12083,6 +12103,7 @@ async function rbPersistMasterChain(role) {
             params: {},
             assigned_mode: 'master',
             bypassed: !!p._bypassed,
+            gain_db: gainDb, pan, phase_inv: phaseInv,
         };
     });
     // The default tone is a standalone chain (its own endpoint, no pre/post
@@ -14377,6 +14398,12 @@ async function rbPersistTone(toneIdx, filename) {
         const pendingVst = p._vst_kind === 'vst' && p._vst_path;
         const assignedVst = (p.assigned && p.assigned.kind === 'vst' && p.assigned.vst_path);
         const isVst = pendingVst || assignedVst;
+        // Same reasoning as rbStudioChainToPayload: preset_pieces is a full
+        // DELETE+INSERT on every save, so the mix must always be sent or an
+        // untouched piece's value silently resets to 0/off.
+        const gainDb = typeof p._gain_db === 'number' ? p._gain_db : 0;
+        const pan = typeof p._pan === 'number' ? p._pan : 0;
+        const phaseInv = !!p._phase_inv;
         if (isVst) {
             return {
                 slot: p.slot,
@@ -14389,6 +14416,7 @@ async function rbPersistTone(toneIdx, filename) {
                 params: p.knobs || {},
                 assigned_mode: p._vst_kind ? 'manual_vst' : (p.assigned && p.assigned.assigned_mode) || 'manual_vst',
                 bypassed: !!p._bypassed,
+                gain_db: gainDb, pan, phase_inv: phaseInv,
             };
         }
         const file = rbEffFile(p);
@@ -14402,6 +14430,7 @@ async function rbPersistTone(toneIdx, filename) {
             params: p.knobs || {},
             assigned_mode: 'manual',
             bypassed: !!p._bypassed,   // persist the per-piece bypass
+            gain_db: gainDb, pan, phase_inv: phaseInv,
         };
     });
     const payload = {
@@ -20152,17 +20181,24 @@ function rbAdvRestore() {
         if (n.kind === 'gear') {
             const p = chain[n.pieceIdx];
             if (!p) return false;                                  // piece gone → reset
-            // Pan: the piece is the durable source (survives a tone reload); fall
-            // back to the graph-saved value, then 0. Mirror it onto the piece.
+            // Pan/level/phase: the piece is the durable source (survives a tone
+            // reload, now via the backend too); fall back to the graph-cached
+            // value, then the default. Mirror onto the piece either way so a
+            // stale cached graph never disagrees with what's about to be shown.
             const pan = (typeof p._pan === 'number') ? p._pan
                       : (typeof n.pan === 'number') ? n.pan : 0;
+            const gainDb = (typeof p._gain_db === 'number') ? p._gain_db
+                         : (typeof n.gainDb === 'number') ? n.gainDb : 0;
+            const phaseInv = (typeof p._phase_inv === 'boolean') ? p._phase_inv : !!n.phaseInv;
             p._pan = pan;
+            p._gain_db = gainDb;
+            p._phase_inv = phaseInv;
             nodes.push({
                 id: n.id, kind: 'gear', pieceIdx: n.pieceIdx, kindLabel: n.kindLabel,
                 rsGear: n.rsGear || p.type || null,
                 label: p.real_name || p.type || 'Gear',
                 img: rbAdvPieceImg(p), bypassed: !!p._bypassed,
-                x: n.x, y: n.y, pan,
+                x: n.x, y: n.y, pan, gainDb, phaseInv,
                 stereoOut: rbAdvPieceCanStereoOut(p, n.rsGear) || !!n.stereoOut,
             });
         } else {
@@ -20311,6 +20347,77 @@ async function rbLoadCurrentToneGate() {
     rbApplyToneGate(gate, {});   // null → gate off (unsaved tone)
 }
 
+// "Universal noise gate" toggle: a library-wide setting (not per-tone). ON
+// force-enables the gate for every already-saved tone (default/saved/song)
+// AND makes gate-on the default for any tone saved from now on; the backend
+// also walks the library to shell-create presets for tones nobody has saved
+// yet so they get it too (see _apply_universal_gate_worker). Runs as a
+// background job because a full library sweep can take a while — this polls
+// GET /universal_noise_gate for progress.
+async function rbLoadUniversalGateState() {
+    try {
+        const r = await fetch(`${window.RB_API}/universal_noise_gate`);
+        if (!r.ok) return;
+        const d = await r.json();
+        const en = document.getElementById('rb-adv-universal-gate-enable');
+        if (en) en.checked = !!d.enabled;
+        if (d.running) rbPollUniversalGateStatus();
+        else rbSetUniversalGateStatus(d);
+    } catch (_) {}
+}
+function rbSetUniversalGateStatus(d) {
+    const el = document.getElementById('rb-adv-universal-gate-status');
+    if (!el) return;
+    if (!d) { el.textContent = ''; return; }
+    if (d.running) {
+        el.textContent = d.total ? `Applying… ${d.progress}/${d.total} songs` : 'Applying…';
+    } else if (d.finished_at) {
+        el.textContent = `Updated ${d.updated || 0} tone${d.updated === 1 ? '' : 's'}`
+            + (d.created ? `, added ${d.created} new` : '');
+    } else {
+        el.textContent = '';
+    }
+}
+let _rbUniversalGatePoll = null;
+function rbPollUniversalGateStatus() {
+    if (_rbUniversalGatePoll) return;
+    _rbUniversalGatePoll = setInterval(async () => {
+        try {
+            const r = await fetch(`${window.RB_API}/universal_noise_gate`);
+            if (!r.ok) return;
+            const d = await r.json();
+            rbSetUniversalGateStatus(d);
+            if (!d.running) {
+                clearInterval(_rbUniversalGatePoll);
+                _rbUniversalGatePoll = null;
+                rbLoadCurrentToneGate();   // the bulk apply may have changed THIS tone's gate too
+            }
+        } catch (_) {}
+    }, 1000);
+}
+async function rbUniversalGateChange() {
+    const en = document.getElementById('rb-adv-universal-gate-enable');
+    const enabled = en ? en.checked : false;
+    const statusEl = document.getElementById('rb-adv-universal-gate-status');
+    if (statusEl) statusEl.textContent = 'Starting…';
+    try {
+        const r = await fetch(`${window.RB_API}/universal_noise_gate`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled }),
+        });
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            if (statusEl) statusEl.textContent = `Failed: ${err.error || r.status}`;
+            if (en) en.checked = !enabled;
+            return;
+        }
+        rbPollUniversalGateStatus();
+    } catch (_) {
+        if (statusEl) statusEl.textContent = 'Failed to reach backend';
+        if (en) en.checked = !enabled;
+    }
+}
+
 async function rbLoadAdvanced() {
     if (!rbState.gearCatalog) {
         try { const d = await (await fetch(`${window.RB_API}/gear_catalog`)).json(); rbState.gearCatalog = (d && d.categories) || {}; }
@@ -20337,6 +20444,9 @@ async function rbLoadAdvanced() {
     rbAdvRenderCanvas();
     rbAdvBindCanvasOnce();
     rbLoadCurrentToneGate();                           // load THIS tone's saved noise gate (not stale state)
+    // The universal toggle is a library-wide setting, not per-tone — fetch its
+    // state once per Advanced session rather than on every tone switch.
+    if (!rbState._universalGateLoaded) { rbState._universalGateLoaded = true; rbLoadUniversalGateState(); }
     rbStudioApplyStereoToEngine().catch(() => {});   // push pan/branch to the live engine
     rbAdvApplyConnectivity();                         // mute if Input/Output is unwired
     try { rbRenderToneHotkeysUI(); } catch (_) {}     // refresh the hotkeys panel's song-tone rows
@@ -20357,6 +20467,7 @@ function rbAdvResetToChain() {
         bypassed: !!e.p.bypassed, x: 0, y: 0,
         pan: (typeof e.p._pan === 'number' ? e.p._pan : 0),   // stereo pan (St-1)
         phaseInv: !!e.p._phase_inv,                           // polarity flip (Ø)
+        gainDb: (typeof e.p._gain_db === 'number' ? e.p._gain_db : 0),  // level trim
         stereoOut: rbAdvPieceCanStereoOut(e.p, e.p.type),
     });
     // Full-chain override ACTIVE → the whole rig is one baked NAM. Show a single
@@ -20628,6 +20739,45 @@ async function rbAdvTogglePhase(id) {
     try { rbAdvRenderCanvas(); } catch (_) {}
 }
 
+// Shared 500ms debounce for the Advanced graph's Pan/Level sliders: `oninput`
+// fires continuously while dragging, so we let the drag settle before hitting
+// the backend. rbAdvPersist() (localStorage, the visual graph) still runs on
+// every tick; only the durable rbStudioPersist() (the actual tone DB save) is
+// debounced — without this the drag was never reaching the backend at all
+// (the chain[idx] mutation only looked saved because it's in-memory).
+let _rbAdvSliderSaveTimer = null;
+function rbAdvDebouncedStudioPersist() {
+    if (_rbAdvSliderSaveTimer) clearTimeout(_rbAdvSliderSaveTimer);
+    _rbAdvSliderSaveTimer = setTimeout(() => {
+        _rbAdvSliderSaveTimer = null;
+        try { rbStudioPersist(); } catch (_) {}
+    }, 500);
+}
+
+// Explicit "Save" button (Advanced toolbar): a safety net on top of the
+// autosave that already fires from most node/edge handlers (see
+// rbStudioPersist call sites throughout this file). Flushes any pending
+// debounced slider save immediately instead of waiting out its 500ms window,
+// then forces a save of the CURRENT chain regardless of what triggered it —
+// covers any edit path that doesn't autosave on its own.
+async function rbAdvSaveNow() {
+    if (_rbAdvSliderSaveTimer) { clearTimeout(_rbAdvSliderSaveTimer); _rbAdvSliderSaveTimer = null; }
+    const btn = document.getElementById('rb-adv-save-btn');
+    const label = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    try {
+        const p = rbStudioPersist();
+        if (p && typeof p.then === 'function') await p;
+        if (btn) btn.textContent = '✓ Saved';
+    } catch (_) {
+        if (btn) btn.textContent = 'Save failed';
+    } finally {
+        if (btn) {
+            setTimeout(() => { btn.disabled = false; btn.textContent = label || '💾 Save'; }, 1200);
+        }
+    }
+}
+
 // Level slider handler: persist on the node + the durable piece, push live to
 // the amp slot's postGain (independent of the loudness-trim slot).
 async function rbAdvOnLevelInput(id, val) {
@@ -20642,6 +20792,7 @@ async function rbAdvOnLevelInput(id, val) {
     const lbl = document.querySelector(`[data-adv-level-val="${id}"]`);
     if (lbl) lbl.textContent = rbAdvLevelLabel(db);
     rbAdvPersist();
+    rbAdvDebouncedStudioPersist();
     const audio = rbAudioApi();
     if (audio && typeof audio.setPostGain === 'function'
         && typeof n.pieceIdx === 'number' && n.pieceIdx >= 0) {
@@ -21509,6 +21660,7 @@ async function rbAdvOnPanInput(id, val) {
     const lbl = document.querySelector(`[data-adv-pan-val="${id}"]`);
     if (lbl) lbl.textContent = rbAdvPanLabel(pan);
     rbAdvPersist();
+    rbAdvDebouncedStudioPersist();
     const audio = rbAudioApi();
     if (audio && typeof audio.setPan === 'function'
         && typeof n.pieceIdx === 'number' && n.pieceIdx >= 0) {

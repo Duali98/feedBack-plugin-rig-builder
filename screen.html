@@ -1331,6 +1331,7 @@
                         <button onclick="rbAdvZoom(0.15)" class="rb-adv-btn rb-adv-btn-icon" title="Zoom in">+</button>
                         <button onclick="rbAdvAutoLayout()" class="rb-adv-btn">Tidy</button>
                         <button onclick="rbAdvResetToChain()" class="rb-adv-btn">Reset to chain</button>
+                        <button onclick="rbAdvSaveNow()" id="rb-adv-save-btn" class="rb-adv-btn" title="Save all pending edits on this tone to the tone database now">💾 Save</button>
                         <button onclick="rbAdvExportTone()" class="rb-adv-btn" title="Export this tone's configuration to a file">⬆ Export tone</button>
                         <button onclick="document.getElementById('rb-adv-import-tone').click()" class="rb-adv-btn" title="Import a tone file — replaces this tone's configuration">⬇ Import tone</button>
                         <input type="file" id="rb-adv-import-tone" accept=".json,application/json" style="display:none" onchange="rbAdvImportToneFile(this)">
@@ -1367,6 +1368,11 @@
                             <input type="range" id="rb-adv-gate-depth" min="-100" max="0" step="1" value="-60" oninput="rbAdvGateChange()" style="width:84px;accent-color:#78a0dc;">
                             <span id="rb-adv-gate-depth-label" style="min-width:46px;color:#cdd6e6;">-60 dB</span></label>
                     </div>
+                    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;color:#dbe4f2;font-weight:500;border-left:1px solid rgba(120,165,225,.18);padding-left:14px;margin-left:auto;" title="Force the noise gate on for every tone in your library, and make it the default for tones saved from now on">
+                        <input type="checkbox" id="rb-adv-universal-gate-enable" onchange="rbUniversalGateChange()" style="accent-color:#78a0dc;width:15px;height:15px;">
+                        🌐 Universal noise gate <span style="color:#7e8aa3;font-weight:400;">(all tones)</span>
+                    </label>
+                    <span id="rb-adv-universal-gate-status" style="font-size:11px;color:#7e8aa3;"></span>
                 </div>
                 <div id="rb-adv-canvas" class="rb-adv-canvas">
                     <div id="rb-adv-zoom" class="rb-adv-zoom">
