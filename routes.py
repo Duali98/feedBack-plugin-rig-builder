@@ -536,14 +536,26 @@ _PLATFORM_FOR_CATEGORY = {
 # ── Helpers ──────────────────────────────────────────────────────────
 
 def _final_leveler_vst_path() -> Path | None:
-    """Bundled final loudness normalizer VST.
+    """Final loudness normalizer VST — the AGC + brickwall limiter that lives at
+    the very end of every generated chain, independent of whether the previous
+    stages are NAM, VST or IR. This is the only safety net against a hot/loud
+    chain; without it every tone plays at raw, unprotected level.
 
-    This VST lives at the very end of every generated chain and levels the
-    complete result, independent of whether the previous stages are NAM, VST
-    or IR.
+    Only checked `_plugin_dir / vst` (the bundle shipped inside the plugin
+    directory itself), NOT `_downloaded_vst_root()` (where the opt-in
+    per-platform VST pack actually installs — see _vst_search_roots, which
+    every OTHER VST lookup in this file correctly checks). On any install that
+    got its bundled effects via the VST-pack download rather than a plugin.zip
+    that already contained vst/, this always returned None — the leveler was
+    silently missing with no error, no "missing" warning surfaced to the user
+    (native_preset_full's `missing` list DOES report it, but nothing in the
+    UI highlights that specific entry as "your loudness safety net is off").
     """
-    p = (_plugin_dir / _FINAL_LEVELER_REL).resolve()
-    return p if p.exists() else None
+    for root in _vst_search_roots():
+        p = (root / "racks" / _FINAL_LEVELER_NAME).resolve()
+        if p.exists():
+            return p
+    return None
 
 
 # Gear auditions play a single RAW amp/pedal at an unknown level. The leveler's
