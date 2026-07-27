@@ -364,10 +364,16 @@ function rbSetImmersiveTopbar(on) {
 // the saturation captured at -3 dBFS test tones, restoring the actual
 // "JCM800 at gain 10" character the captures contain.
 //
-// Read from /settings (`nam_chain_input_drive`, default 8.0). Cached
-// in `window.__rbChainInputDrive` so repeated calls (4 hooks below)
-// don't all refetch — the boot-time fetch in rbInit / mega-chain hook
-// populates it. Falls back to 8.0 if the cache hasn't loaded yet.
+// Read from /settings (`nam_chain_input_drive`, default 1.0 — see
+// routes.py: the old 8.0 (≈+18 dB) default over-drove most captures and
+// was pulled back to unity after guitar/bass players reported amps
+// sounding over-distorted). Cached in `window.__rbChainInputDrive` so
+// repeated calls (4 hooks below) don't all refetch — the boot-time fetch
+// in rbInit / mega-chain hook populates it. Falls back to 1.0 (matching
+// the corrected server default) if a chain loads before that fetch
+// resolves — this used to fall back to the OLD 8.0, silently
+// re-introducing the over-drive bug on every race-condition-timed first
+// song load (most noticeable right after app/plugin startup).
 //
 // The old rule was "all guitars get 8×". That fixes high-gain amps, but it
 // also pushes clean amp captures into breakup. Prefer the active amp's stored
@@ -392,7 +398,7 @@ function rbSmoothstep01(value) {
 
 function rbConfiguredChainInputDrive() {
     return (typeof window.__rbChainInputDrive === 'number' && window.__rbChainInputDrive >= 0)
-        ? window.__rbChainInputDrive : 8.0;
+        ? window.__rbChainInputDrive : 1.0;
 }
 
 // Clean input-level calibration trim (linear ×, persisted as nam_input_calibration).
@@ -11642,6 +11648,13 @@ async function rbConfirmGearSwap(toneIdx, pIdx, toRsGear) {
         const panel = document.getElementById(`rb-swap-${toneIdx}-${pIdx}`);
         if (panel) panel.classList.add('hidden');
         await rbRefreshSongAfterEdit(toneIdx);
+        // If this tone is currently previewing, reload it live — the backend
+        // just recomputed the preset's primary model (_recompute_preset_primaries),
+        // so the cached preview payload is stale and must be REFETCHED (unlike a
+        // bypass toggle, which reuses the cached payload). Without this the swap
+        // was saved correctly but the engine kept playing the old gear until the
+        // user left the song and reopened it, which forced a fresh fetch.
+        if (rbState.listeningTone === toneIdx) await rbReloadPreview(presetId).catch(() => {});
     } catch (e) {
         alert(`Gear swap failed: ${e.message || e}`);
     }
