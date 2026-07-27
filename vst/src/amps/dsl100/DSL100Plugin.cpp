@@ -12,9 +12,9 @@ class DSL100Plugin : public Plugin {
     void cfg(){
         // EL34 100W: open OT top (16k) + a 2.6k tilt (JCM800 family), bias ~-36,
         // big Ultra gain span; per-channel loudness makeup targets ~-16 dBFS.
-        core.setConfig(16000.0f, 9.0f, -36.0f, /*classicSpan*/6.0f, /*ultraSpan*/9.0f,
+        core.setConfig(16000.0f, 6.5f, -36.0f, /*classicSpan*/6.0f, /*ultraSpan*/9.0f,
                        /*hp*/115.0f, /*powerBase*/0.5f, /*powerDrive*/2.2f,
-                       /*makeupClassic*/5.5f, /*makeupUltra*/3.5f);
+                       /*makeupClassic*/4.7f, /*makeupUltra*/3.0f);
     }
     void applyAll(){
         core.ultra         = fP[kChannel]     >= 0.5f;

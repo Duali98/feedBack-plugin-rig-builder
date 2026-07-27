@@ -22,6 +22,10 @@ class Dsl15Plugin : public Plugin {
         core.ultra         = fP[kChannel] >= 0.5f;
         core.classicCrunch = false;   // DSL15 Classic = clean->crunch via the GAIN knob (no crunch switch)
         core.ultraOD2      = false;
+        // El fit A2 del DSL100H re-tuneo el clean-mode del core compartido;
+        // el DSL15 conserva su comportamiento previo (sin refs propias).
+        core.cfgCleanMult = 1.0f; core.cfgCrunchMult = 1.25f;
+        core.cfgCleanVr = 4.0f; core.cfgCleanMkDb = 0.0f;
         core.toneShift     = fP[kToneShift] >= 0.5f;
         core.pClassicGain  = fP[kClassicGain];
         core.pUltraGain    = fP[kUltraGain];

@@ -15,6 +15,15 @@
 // EQ/voicing calibrated against the finished Marsten family (JCM800/JTM45/Plexi):
 // JCM800 TMB stack (220k/1M/22k/33k, 470p/22n/22n), 16k-ish OT + a 2.6k top tilt.
 //
+// RECALIBRADO 2026-07-26 (DSL100H) contra su pack A2 real (8 caps, 4 modos +/-
+// Tone Shift, amp-only, posiciones no documentadas -> ancla Gain 0.5/EQ noon):
+// el Clean-mode real ES limpio (nuestro 1.0x quedaba coh -0.29 mas sucio ->
+// cfgCleanMult 0.45x + cfgCleanMkDb) y el Crunch muerde mas (2.2x); tilt del
+// DSL100 9->6.5; Tone Shift re-centrado 600->380 Hz (el shift real scoopea mas
+// abajo y deja vivo 800-2k). Resultado: coherencias +-0.06 y bandas <=+-2.4 en
+// los 4 modos; residual peor = OD1 80-250 +3..+5 (con y sin shift). El DSL15
+// resetea los cfg nuevos a su comportamiento previo (sin refs propias aun).
+//
 #include "tube_stage.hpp"
 #include <cmath>
 
@@ -53,6 +62,9 @@ struct DslCore {
     // per-amp config (set once by the plugin)
     float cfgOtFreq=16000.f, cfgTilt=9.f, cfgBias=-37.f, cfgClassicSpan=9.f, cfgUltraSpan=14.f, cfgHp=115.f;
     float cfgPowerBase=0.5f, cfgPowerDrive=2.2f, cfgMakeupClassic=5.5f, cfgMakeupUltra=2.0f;
+    // Clean-mode del canal Classic (fit A2 DSL100H; el DSL15 los resetea a su
+    // comportamiento previo porque su Classic es clean->crunch por el gain):
+    float cfgCleanMult=0.45f, cfgCrunchMult=2.20f, cfgCleanVr=1.5f, cfgCleanMkDb=7.7f;
 
     float gDrive=1, v3Drive=1, v4Drive=1, vRDrive=1, piDrive=6, outLevel=1;
 
@@ -99,9 +111,9 @@ struct DslCore {
             v3Drive = 1.0f + 5.0f * uT;                      // extra ULTRA cascade (pre-tone)
             vRDrive = 1.0f + 9.0f * uT + (ultraOD2 ? 1.5f : 0.0f);  // driven recovery (post-tone)
         } else {
-            gDrive  = (0.45f + cfgClassicSpan * cT) * (classicCrunch ? 1.25f : 1.0f);
+            gDrive  = (0.45f + cfgClassicSpan * cT) * (classicCrunch ? cfgCrunchMult : cfgCleanMult);   // fit A2: el Clean real ES limpio, el Crunch muerde mas
             v3Drive = 1.0f;
-            vRDrive = 1.0f + 4.0f * cT;                      // mild recovery
+            vRDrive = 1.0f + (classicCrunch ? 4.0f : cfgCleanVr) * cT;   // mild recovery
         }
         v4Drive = 1.0f;   // v4 unused in the JCM800-style chain
         brightShelf.highShelf(sr, 2000.0f, 4.0f * (1.0f - g));
@@ -112,7 +124,7 @@ struct DslCore {
         tone.setComponents(220e3, 1e6, 22e3, 33e3, 470e-12, 22e-9, 22e-9);
         tone.update(sr, pTreble, pMid, pBass);
         // TONE SHIFT: switched mid-scoop (the modern "scooped" voice)
-        scoop.peak(sr, 600.0f, toneShift ? -8.0f : 0.0f, 0.7f);
+        scoop.peak(sr, 380.0f, toneShift ? -9.5f : 0.0f, 0.85f);   // fit A2: el shift real scoopea mas abajo y deja vivo 800-2k
         presenceShelf.highShelf(sr, 3000.0f, (pPres-0.5f)*10.0f);
         // RESONANCE / DEEP: resonant low-end boost in the power section
         resoShelf.lowShelf(sr, 100.0f, (pReso-0.5f)*8.0f);
@@ -127,7 +139,7 @@ struct DslCore {
 
         // Loudness makeup: per-channel base, decreasing with Gain so the knob adds
         // dirt not level; target ~-16 dBFS at the operating point (family method).
-        const float mk = ultra ? cfgMakeupUltra : cfgMakeupClassic;
+        const float mk = ultra ? cfgMakeupUltra : (cfgMakeupClassic + (classicCrunch ? 0.0f : cfgCleanMkDb));   // el clean-mode pierde ese nivel
         outLevel = std::pow(10.0f, 0.05f * (mk - 5.0f * g));
     }
 
