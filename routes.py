@@ -9951,6 +9951,73 @@ def setup(app, context):
             log.warning("save_preset: mirror to sibling format failed", exc_info=True)
         return {"ok": True, "preset_id": preset_id, "mirrored": mirrored, "mirrored_presets": mirrored_presets}
 
+    @app.post("/api/plugins/rig_builder/override_active_tone")
+    def override_active_tone(data: dict = Body(...)):
+        """Permanently replace ONE song tone's gear with another preset's gear —
+        the whole-tone equivalent of /gear/replace_with's per-piece swap.
+        Backs the in-song "Override active tone with preset" player control:
+        works on whatever tone is CURRENTLY PLAYING regardless of how it's
+        named (game tone-name conventions are inconsistent across songs —
+        "Clean" / "CLEAN" / "orion_dist" / "bass_base" — so unlike the Setup
+        category overrides, which match by name, this needs no classification
+        at all; the caller already knows which tone_key is active).
+
+        Body: `{filename, tone_key, source: 'default'|'saved', name}` — name
+        is the saved tone's name, ignored (empty) for source='default'.
+
+        Destructive: overwrites this tone's own saved preset_pieces outright
+        (no separate override layer, no built-in undo — matches the semantics
+        already established by /gear/replace_with). The target's own gate
+        settings are left untouched (only gear is copied) — this endpoint
+        never passes gate kwargs to _persist_preset_chain, and that function
+        COALESCE-preserves the existing gate whenever the caller omits it.
+        """
+        filename = data.get("filename") or ""
+        tone_key = data.get("tone_key") or ""
+        source = data.get("source") or "default"
+        name = data.get("name") or ""
+        if not filename or not tone_key:
+            return JSONResponse({"error": "filename and tone_key required"}, 400)
+        src_pid = _resolve_tone_preset_id(source, name)
+        if src_pid is None:
+            return JSONResponse({"error": "source tone has no saved preset yet"}, 404)
+        conn = _get_conn()
+        rows = conn.execute(
+            "SELECT slot, rs_gear_type, kind, file, params_json, tone3000_id, "
+            "assigned_mode, bypassed, vst_path, vst_format, vst_state, "
+            "gain_db, pan, phase_inv "
+            "FROM preset_pieces WHERE preset_id = ? ORDER BY slot_order",
+            (src_pid,),
+        ).fetchall()
+        if not rows:
+            return JSONResponse({"error": "source tone has no gear to copy"}, 400)
+        pieces = []
+        for (slot, rs_gear_type, kind, file, params_json, tone3000_id,
+             assigned_mode, bypassed, vst_path, vst_format, vst_state,
+             gain_db, pan, phase_inv) in rows:
+            try:
+                params = json.loads(params_json) if params_json else {}
+            except (ValueError, TypeError):
+                params = {}
+            pieces.append({
+                "slot": slot, "rs_gear_type": rs_gear_type, "kind": kind,
+                "file": file, "params": params, "tone3000_id": tone3000_id,
+                "assigned_mode": assigned_mode, "bypassed": bool(bypassed),
+                "vst_path": vst_path, "vst_format": vst_format, "vst_state": vst_state,
+                "gain_db": gain_db, "pan": pan, "phase_inv": phase_inv,
+            })
+        fname_key = _db_song_key(filename)
+        target_name = f"{fname_key}::{tone_key}"
+        try:
+            preset_id = _persist_preset_chain(
+                filename=fname_key, tone_key=tone_key, name=target_name,
+                pieces=pieces, assigned_mode="manual",
+            )
+        except Exception as e:
+            log.exception("override_active_tone failed")
+            return JSONResponse({"error": f"{type(e).__name__}: {e}"}, 500)
+        return {"ok": True, "preset_id": preset_id, "piece_count": len(pieces)}
+
     # ── Real Cab: el CAB ROOM del catálogo (Gear → Cabs) ────────────────
     # El panel de cada cab dibuja un canvas con el mic ARRASTRABLE; al
     # soltarlo la UI llama a /cab/synthesize y AUDICIONA el IR renderizado
